@@ -1,0 +1,18 @@
+---
+layout: layout.njk
+title: Posts
+---
+
+<h2>Posts:</h2>
+<p>⚠️ I have no formal education in graphics programming or even Computer Science, I'm just a hobbyist (and self-taught)
+    that really like this subject and therefore study it a lot, almost everyday. But of course I'm not sure about everything
+    I'm writing here, probably some information is wrong.
+    <strong>Don't consider any of my statements as absolute truth</strong>, search and validate informations on your own, please!</p>
+{% set posts = [ {title: "Hello, World!", path: "/posts/hello_world"}, {title: "Flappy Bird Course - Understanding the Game1 class (Part 1)", path: "/posts/flappy_bird_course/"}, {title:"Flappy Bird Course - Drawing the background and Scrolling It (part 2)", path:"/posts/flappy_bird_course/part2"}] %}
+<ol>
+    {% for post in posts %}
+        <li>
+            <a href="{{ post.path }}">{{ post.title }}</a>
+        </li>
+    {% endfor %}
+</ol>

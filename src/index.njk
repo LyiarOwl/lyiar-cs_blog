@@ -1,0 +1,25 @@
+---
+layout: layout.njk
+title: Home
+---
+
+<p>
+    Hello, here you can find all my personal things, most about programming. Maybe you find something about drawing, but
+    most is about programming.
+</p>
+
+<p>
+    <em>Why is your website so ugly?</em> Because I'm lazy about css and nextjs and react and almost anything about web
+    development, so... my bad, but if you ignore this fact, probably you can find something useful here... or not.
+</p>
+
+<p><em>At least this blog have a good loading performance... no? 🫠</em></p>
+
+<h2>Recent posts:</h2>
+{% set recentPosts = [{title: "Hello, World!", path: "/posts/hello_world"}, {title: "Flappy Bird Course - Understanding the Game1 Class! (part 1)", path: "/posts/flappy_bird_course/"}, {title:"Flappy Bird Course - Drawing the background and Scrolling It (part 2)", path:"/posts/flappy_bird_course/part2"}] %}
+
+<ol>
+    {% for post in recentPosts %}
+    <li><a href="{{post.path}}">{{ post.title }}</a></li>
+    {% endfor %}
+</ol>

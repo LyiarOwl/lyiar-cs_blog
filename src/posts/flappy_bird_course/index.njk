@@ -1,0 +1,502 @@
+---
+layout: layout.njk
+title: Understanding the Game1 Class
+createdAt: 12/08/2026
+---
+
+<h2>{{ title }}</h2>
+<p>Hello, I'm Lyiar!</p>
+<p>In this set of posts my intetion is to introduct MonoGame for you. I mean, perhaps I manage to teach you MonoGame
+    while we develop a simple game called
+    <a
+        href="https://en.wikipedia.org/wiki/Flappy_Bird"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Flappy Bird | Wikipedia (opens in a new tab)">Flappy Bird</a>.</p>
+<p>
+    Actually this set of posts would become a video, but since I was having difficult writing the script I decided to turn
+    all this thing into a set of posts and later compile them into a single video 😵‍💫.
+</p>
+<p>Demo of the project done:</p>
+<video src="/assets/flappy_bird_course/videos/flappybird_demo.webm" muted loop autoplay></video>
+<hr/>
+<h4>Summary:</h4>
+<ol>
+    <li>
+        <a href="#installing-monogame-and-creating-a-project">Installing MonoGame and Creating a Project</a>
+    </li>
+    <li>
+        <a href="#templates-and-its-rendering-backend">Templates and its rendering backend</a>
+    </li>
+    <li>
+        <a href="#opening-the-project">Opening the project</a>
+    </li>
+    <li>
+        <a href="#spritebatch-and-batching">SpriteBatch and... batching</a>
+    </li>
+    <li>
+        <a href="#initialize-loadcontent-and-graphicsdevice-availability">Initialize, LoadContent and the GraphicsDevice
+            availability</a>
+    </li>
+    <li>
+        <a href="#how-do-i-change-the-fps">Fixed time step and How do I change the FPS?</a>
+    </li>
+    <li>
+        <a href="#unloadcontent-dispose">UnloadContent and Dispose</a>
+    </li>
+</ol>
+<hr/>
+<h3 id="installing-monogame-and-creating-a-project">
+    <a href="#installing-monogame-and-creating-a-project">Installing MonoGame and Creating a Project</a>
+</h3>
+<p>Ok, for develop with MonoGame we need a project that already contains MonoGame... Actually, you can set MonoGame
+    manually by adding the necessary packages into a Console application, but we can avoid doing this everytime we want to
+    develop with MonoGame by instantiating one of it's templates.</p>
+<p>If you don't have MonoGame installed (which would be weird) you can learn how to install it directly from
+    <a
+        href="https://docs.monogame.net/articles/getting_started/index.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Getting Started | MonoGame (opens in a new tab)">MonoGame's documentation</a>. Look for the sections
+                      about "Setting Up" in Mac OS,
+                      Linux or Windows.</p>
+<p>And why not to mention that I'm considering that you already familiar with programming and CSharp which means that I
+    don't will teach about the language. If you don't know nothing about CSharp or even nothing about programming 😳 here
+    are some suggestions:</p>
+<ul>
+    <li>
+        <a
+            href="https://www.youtube.com/watch?v=GhQdlIFylQ8"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="(opens in a new tab)">FreeCodeCamp - C# Tutorial - Full Course for Beginners (YouTube, English)</a>
+    </li>
+    <li>
+        <a href="https://youtu.be/PKMm-cHe56g" target="_blank" rel="noopener noreferrer" title="(opens in a new tab)">Victor
+            Lima - Curso de C# - Aprenda o essencial em 5 HORAS (Youtube, Brazilian Portuguese)</a>
+    </li>
+    <li>
+        <a
+            href="https://learn.microsoft.com/en-us/dotnet/csharp/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="(opens in a new tab)">Microsoft - Learn C# (Microsoft's Documentation, English and Portuguese)</a>
+    </li>
+</ul>
+<p>Okidoki, considering that you have the templates installed lets instantiate one:</p>
+<pre>dotnet new mgdesktopgl -o FlappyBird</pre>
+<p>If you don't know or don't remember from where I take this
+    <code>mgdesktopgl</code>
+    word, you can list them all
+              by running
+    <code>dotnet new list</code>:</p>
+<img
+    src="/assets/flappy_bird_course/images/Screenshot_20260812_205933.png"
+    alt="listing all templates that can be created with dotnet new">
+<p>The template relevant for us right now is the
+    <code>mgdesktopgl</code>
+    that will setup our MonoGame project to work with OpenGL. We don't will work with OpenGL directly, but it is the one
+    that will be used under the hoods.
+</p>
+<hr/>
+<h4 id="templates-and-its-rendering-backend">
+    <a href="#templates-and-its-rendering-backend">Templates and its rendering backend</a>
+    (skippable)</h4>
+<p>Since I mentioned OpenGL: the other templates
+    <code>mgdesktopvk</code>
+    (MonoGame 3.8.5+ only),
+    <code>mgwindowsdx</code>,
+    <code>mgwindowsdx12</code>
+    (MonoGame 3.8.5+ only),
+    <code>mgandroid</code>
+    and
+    <code>mgios</code>
+    as the
+    <strong>vk</strong>
+    or
+    <strong>android</strong>
+    words suggests, them are for another
+              platforms (like mobile) or use other rendering backend than OpenGL.
+</p>
+<p>To work with the android and iOS template you'll need more dependencies than simply installing the templates, you can
+    have a bit more information in
+    <a
+        href="https://docs.monogame.net/articles/getting_started/1_setting_up_your_os_for_development_ubuntu.html?tabs=android#install-additional-workloads"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Additional Workloads | MonoGame (opens in a new tab)">MonoGame's documentation</a>
+    about this.</p>
+<p>The template that ends with
+    <strong>vk</strong>
+    (stands for VulKan) expects that you graphics card have support
+              for this technology. According with
+    <a
+        href="https://monogame.net/blog/2026-07-15-3.8.5-release-2026/#new-desktopvk-target"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="New DesktopVK target | MonoGame (opens in a new tab)">MonoGame's blog</a>, the idea is that this template replace
+        the one with OpenGL in the future since some platforms like Mac OS despite having support for OpenGL, it is more for
+        compatibility than for... resources? Well, anyway, the template with OpenGL is the one that currently we have a
+        guarantee that will work in almost all platforms.</p>
+<p>Finally, the templates that ends with
+    <strong>dx</strong>
+    and
+    <strong>dx12</strong>
+    (stands for DirectX) use DirectX (the template without a number uses dx11) as rendering backend and only works in
+    Windows. I mean, if you instantiate this template, you'll be unable to compile it since it will need a windows version
+    of the dotnet core.</p>
+<hr/>
+<h3 id="opening-the-project">
+    <a href="#opening-the-project">Opening the project</a>
+</h3>
+<p>Nice, if you load your project into some code editor like VSCode you will see three things: the
+    <code>Content</code>
+    directory, the
+    <code>Program.cs</code>
+    and also
+    <code>Game1.cs</code>
+    classes. Actually, have
+              more than this, but these three (or two) are the relevant for us.
+</p>
+<p>The
+    <code>Program.cs</code>
+    is the entry point of our project, I'm not sure if is common to change something in this class, to this day I still
+    haven't needed to change it.</p>
+<p>This is what we have in
+    <code>Game1.cs</code>:</p>
+<img
+    src="/assets/flappy_bird_course/images/Screenshot_20260813_011131.png"
+    alt="showing the initial state of the Game1 class">
+<p>This class is where we usually develop our game.</p>
+<p>We have some things here:</p>
+<p>The first field in the class (in the line 9), the
+    <a
+        href="https://docs.monogame.net/api/Microsoft.Xna.Framework.GraphicsDeviceManager.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="GraphicsDeviceManager | MonoGame (opens in a new tab)">GraphicsDeviceManager</a>
+    is the component responsible for getting some valid graphic context, set some configurations for us (like setting the
+    initial window size and enabling vsync) and also provides for us the
+    <code>GraphicsDevice</code>
+    component.</p>
+<p>
+    <a
+        href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Graphics.GraphicsDevice.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="GraphicsDevice | MonoGame (opens in a new tab)">GraphicsDevice</a>
+    is the layer that MonoGame provides for us to speak with the graphics context available for our application. Since our
+    template is setup with OpenGL, the
+    <code>GraphicsDevice</code>
+    will be our high-level layer to work with OpenGL.
+</p>
+<p>We could create buffer objects, setup vertices and indices, textures and shaders and do the work of the
+    <a
+        href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Graphics.SpriteBatch.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="SpriteBatch | MonoGame (opens in a new tab)">SpriteBatch</a>
+    without the
+    <code>SpriteBatch</code>
+    thanks to the
+    <code>GraphicsDevice</code>
+    and a bit more easily than working with OpenGL directly.
+</p>
+<p>I don't inteed to reimplement a
+    <code>SpriteBatch</code>
+    here, it will demand some work that I don't want to try
+              to explain right now. The MonoGame's
+    <code>SpriteBatch</code>
+    implementation is really well made and optimized,
+              so unless we really need something that MonoGame's
+    <code>SpriteBatch</code>
+    don't provides, we'll stick with it.
+</p>
+<p>By the way, since we mentioned the
+    <code>SpriteBatch</code>, look a reference of one in our class (in the line
+                      10). The
+    <code>SpriteBatch</code>
+    is a class (or helper) that MonoGame's provide for us to draw (easily) textures, or pieces of a texture usually called
+    as sprite.</p>
+<hr/>
+<h4 id="spritebatch-and-batching">
+    <a href="#spritebatch-and-batching">SpriteBatch and... batching</a>
+    (skippable)
+</h4>
+<p>The word
+    <strong>"batch"</strong>
+    in the class name points to the way that this class works. Look this code:</p>
+<pre>_spriteBatch.Begin();
+_spriteBatch.Draw(_texture, ...);
+_spriteBatch.Draw(_texture, ...);
+_spriteBatch.Draw(_texture, ...);
+_spriteBatch.End();</pre>
+<p>What will happen here?</p>
+<p>Well, depending on your knowledge about this subject, maybe you're coming from
+    <a href="https://pyga.me/" target="_blank" rel="noopener noreferrer" title="(opens in a new tab)">Pygame</a>
+    and you're thinking right now:
+    <em>Hum... idk what
+        <code>Begin()</code>
+        and
+        <code>End()</code>
+        are doing, but each
+        <code>Draw()</code>
+        is drawing... the
+        <code>_texture</code>... right?</em>
+</p>
+<p>Yeah, of course... Btw, since I mentioned Pygame, I'll use it as reference here.</p>
+<p>In Pygame you usually draw (or blit) textures in this way:</p>
+<pre>surface.blit(imageSurface, position)
+surface.blit(imageSurface, position)
+surface.blit(imageSurface, position)</pre>
+<p>For each
+    <code>blit()</code>
+    you have a draw call. If you call
+    <code>blit()</code>
+    a thousand of times, you will
+              have a thousand draw calls.</p>
+<p>
+    <code>SpriteBatch.Draw()</code>
+    in the otherhand will accumulate all the information needed to draw our texture and will indeed draw it only in the
+    future (usually when
+    <code>End()</code>
+    is called).</p>
+<!-- <p>That is the main difference about the <code>SpriteBatch</code>, it will accumulate the data needed by the GPU
+and will draw in the future (usually when <code>End()</code> is called).</p> -->
+<p>Pygame's bliting is just a copy of pixels from some surface to another surface and this operation is made entirely by
+    the CPU (I'm not considering Textures, since most of the tutorials about Pygame out there are still using surface
+    blitting).</p>
+<p>MonoGame do the entire operation with the GPU. In order to draw with the GPU you need to provide some information
+    like vertices (position, color, texture coordinates) and some valid shader (I'm being suuuuper brief here ok?). The
+    problem is that sending information to the GPU can be costly specially if you need to do this with a high frequency in
+    small intervals. There are some things that you can do to mitigate this overhead like accumulating the many informations
+    as you can and send them at once to the GPU and/or try to reorder your statements to reduce state changing.</p>
+<p>Briefly: state change is the needy of the GPU and the graphics driver to reconfigure itself when something change
+    like when you are drawing two different textures and this operation, is costly. Costly in the sense that many of this
+    overhead accumulated would result in low FPS.</p>
+<p>Ok, do you remember what I said about "accumulating the many informations as you can and send at once to the GPU"?
+    This is exactly what the
+    <code>SpriteBatch</code>
+    does. Instead of drawing each texture in the moment that
+              you call
+    <code>Draw()</code>, internally, the
+    <code>SpriteBatch</code>
+    will accumulate all the information needed
+              to draw our texture and will draw it when:
+    <code>End()</code>
+    is called or the internal buffer becomes full or
+              when the texture changes.</p>
+<hr/>
+<p>The next part of our
+    <code>Game1.cs</code>
+    class is the constructor. If you check inside of it you will find:</p>
+<pre>public Game1()
+{
+    _graphics = new GraphicsDeviceManager(this);
+    Content.RootDirectory = "Content";
+    IsMouseVisible = true;
+}</pre>
+<p>Considering I said earlier, the first line within the constrcutor here should be straight.</p>
+<p>
+    <code>Content.RootDirectory</code>
+    is the place where MonoGame will look when you are loading some asset with the
+    <a
+        href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Content.ContentManager.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="ContentManager | MonoGame (opens in a new tab)">ContentManager</a>.
+    <code>"Content"</code>
+    is the name of the directory that MonoGame will look into for assets. You can use any other name here, but this is
+    usually the default.
+</p>
+<p>
+    <code>IsMouseVisible</code>
+    sets the cursor visibility that, by the way in the old XNA this parameter were set as false by default (cursor
+    hidden).</p>
+<p>Right, next we have the methods
+    <code>Initialize</code>,
+    <code>LoadContent</code>,
+    <code>Update</code>
+    and
+    <code>Draw</code>.
+</p>
+<p>
+    <code>Initialize</code>
+    runs right after the constructor and then
+    <code>LoadContent</code>
+    is called (by the
+    <code>Initialize</code>).
+</p>
+<hr/>
+<h4 id="initialize-loadcontent-and-graphicsdevice-availability">
+    <a href="#initialize-loadcontent-and-graphicsdevice-availability">Initialize, LoadContent and the GraphicsDevice
+        availability</a>
+    (skippable)</h4>
+<p>By the way, do you remember about the
+    <code>GraphicsDevice</code>
+    I mentioned earlier? Most of the graphical
+              things in MonoGame depends on a valid
+    <code>GraphicsDevice</code>, and despite we instantiate the
+    <code>GraphicsDeviceMananger</code>
+    inside the constructor, the
+    <code>GraphicsDevice</code>
+    that it provides for
+              us is only indeed available after the constructor, beginning in the
+    <code>Initialize</code>.
+</p>
+<p>So knowing this you can even remove the method
+    <code>LoadContent</code>
+    and initialize and load everything from
+              the
+    <code>Initialize</code>
+    method... but, why we usually don't do this (I mean, if you look some MonoGame, FNA or XNA code out there you will see
+    that this isn't very common)? probably
+    <strong>convention</strong>, most of the projects follow this convention: you initialize/create things in the initialize
+        and load resources (specially the ones that depends on the ContentMananger) through the
+    <code>LoadContent</code>.</p>
+<p>
+    What can I say about this? Well, is the project you are currently working entirely yours? only you will read and write
+    in it? If this is the case, do whenever you want. Otherwise, if you know that in some moment someone will contribute
+    with your code or you want to share it (the code more specifically) with the community, then just, follow the
+    convention, no one will get hurts 🧡.
+</p>
+<hr/>
+<p>Later we have the
+    <code>Update</code>
+    and
+    <code>Draw</code>
+    methods.</p>
+<p>The
+    <code>Update</code>
+    method is called after the
+    <code>LoadContent</code>
+    at last once and then the application
+              enters in the game loop and then
+    <code>Update</code>
+    and
+    <code>Draw</code>
+    pass to be called in loop: where you
+              will have
+    <code>Update</code>
+    and
+    <code>Draw</code>
+    being called in loop until you application ends.</p>
+<hr/>
+<h4 id="how-do-i-change-the-fps">
+    <a href="#how-do-i-change-the-fps">Fixed time step and How do I change the FPS?</a>
+    (skippable)</h4>
+<p>I'm not sure about this (I'm sorry, perhaps I interpreted the section about the game loop in this
+    <a
+        href="https://docs.monogame.net/articles/getting_to_know/whatis/game_loop/"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="What is the Game Loop | MonoGame (opens in a new tab)">diagram</a>
+    incorrectly), but apparently when
+    <code>IsFixedTimeStep</code>
+    is
+    <code>true</code>
+    (this is the default, by the
+              way) the
+    <code>Update</code>
+    is called multiple times before the
+    <code>Draw</code>
+    until the interval set in
+    <code>TargetElapsedTime</code>
+    be reached. But if it is set as
+    <code>false</code>
+    then you will have the classic
+    <code>Update</code>
+    followed by a
+    <code>Draw</code>
+    for every frame.</p>
+<p>In short, when
+    <code>IsFixedTimeStep</code>
+    is set to
+    <code>false</code>
+    you have a guarantee that the game loop
+              will be something like:</p>
+<pre>Update -> Draw -> Update -> Draw</pre>
+<p>But when it is set to
+    <code>true</code>
+    the only guarantee that you have is that just after some update you will have a draw, but until there you can have
+    multiple calls to update before the draw:</p>
+<pre>Update -> Update -> Update -> Draw</pre>
+<p>By the way,
+    <code>IsFixedTimeStep</code>
+    and
+    <code>_graphics.SynchronizeWithVerticalRetrace</code>
+    (VSync) are
+              set to
+    <code>true</code>
+    by the default and
+    <code>TargetElapsedTime</code>
+    is set to
+    <code>1.0/60.0</code>
+    (or 60
+              UPS).</p>
+<p>
+    <em>Everything change you do in the
+        <code>_graphics</code>
+        outside of the constructor you need to call
+        <code>_graphics.ApplyChanges()</code>!</em>
+</p>
+<p>According with my test changing the
+    <code>TargetElapsedTime</code>
+    change how many updates you can have per frame
+              in your application, but not the FPS.</p>
+<p>By default, with
+    <code>IsFixedTimeStep</code>
+    and vsync set to
+    <code>true</code>
+    your game will always (try) to
+              run at 60 UPS and FPS.</p>
+<p>Changing the
+    <code>TargetElapsedTime</code>
+    will only change the UPS. If you indeed want to have a FPS different of 60 you will need to disable the VSync. Disabling
+    the VSync will make the FPS synchronize with the Update rate which means that if you set your game to have 120 UPS, for
+    example, with vsync set to
+    <code>false</code>
+    you will
+              also have 120 FPS.</p>
+<p>Yeah, you cannot set the FPS individually, but perhaps in most of the cases you don't even need to change these
+    settings, I just mentioned this because... idk, perhaps someday you will be doing something really special that gives
+    you the need of changing these properties, so knowing about this could be helpful, right? 😅</p>
+<hr/>
+<h4 id="unloadcontent-dispose">
+    <a href="#unloadcontent-dispose">UnloadContent and Dispose</a>
+</h4>
+<p>Finally, I didn't mentioned initially but there are also other two methods that we can override and are very useful:
+    the
+    <code>UnloadContent</code>
+    and
+    <code>Dispose</code>
+    methods.</p>
+<p>
+    <code>UnloadContent</code>
+    is the opposite of the
+    <code>LoadContent</code>, you would use this method to unload
+                      asssets loaded with the
+    <code>ContentManager</code>. This method runs before the
+    <code>Dispose</code>. For
+                      example:</p>
+<pre>protected override void UnloadContent() {
+    Content.UnloadAsset("my-texture"); // will unload just the specified asset
+    Content.UnloadAssets("my-texture", "my-sound"); // will unload the assets specified.
+    Content.Unload(); // will unload all the assets
+}</pre>
+<p>And finally
+    <code>Dispose</code>
+    is the method where you usually freed those resources that the gargabe collector don't have direct control. So you need
+    to explicitly free them (by calling its
+    <code>Dispose</code>
+    method). For
+              example:</p>
+<pre>protected override void Dispose() {
+    _spriteBatch.Dispose();
+    _texture.Dispose();
+}</pre>
+<hr/>
+<p>Nice, if you read this far, thank yooooou so much. I know, many times I end up getting excited and talking more than
+    I need but despite that I hope all this was useful for you 😊.</p>
+<p>In the next chapter we will draw things, more specifically a background and scroll them infinitely through the
+    screen, see you soon.</p>
