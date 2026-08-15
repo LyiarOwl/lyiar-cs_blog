@@ -1,7 +1,671 @@
 ---
 layout: layout.njk
-title: Drawing the background and Scrolling It
+title: Loading a Texture and Drawing the Background
 createdAt: 13/08/2026
 ---
 
 <h2>{{ title }}</h2>
+
+<p>Heya 👋</p>
+
+<p>In this chapter we will load a texture, draw it and make it scroll (infinitely) in the screen.</p>
+
+<p>Demo of this chapter done:</p>
+
+<video src="/assets/flappy_bird_course/videos/duplicating_the_background_for_infinite_scrolling.mp4" muted autoplay loop></video>
+
+<p>If you haven't read the previous chapter yet: <a href="/posts/flappy_bird_course/">Creating the Project and
+        Understanding the Game1 Class (part 1)</a></p>
+
+<hr/>
+ 
+<h4>Summary:</h4>
+<ol>
+    <li><a href="#loading-the-texture">Loading the texture</a></li>
+    <li><a href="#using-the-mgcb-editor">Using the MGCB Editor</a></li>
+    <li><a href="#using-the-new-code-first-content-builder">Using the new code-first Content Builder (MonoGame 3.8.5+ only)</a></li>
+    <li><a href="#drawing-a-texture">Drawing a texture</a></li>
+    <li><a href="#about-the-spritebatch-draw">About the SpriteBatch.Draw</a></li>
+    <li><a href="#why-the-top-left-corner">Why the top-left corner?</a></li>
+    <li><a href="#what-is-the-vector2-and-color">What is the Vector2 and Color?</a></li>
+    <li><a href="#color-tint-and-opacity">Color tint and Opacity</a></li>
+    <li><a href="#drawing-part-of-a-texture">Drawing part of a texture</a></li>
+    <li><a href="#texture-packing">Texture packing</a></li>
+    <li><a href="#reordering-the-draw-calls">Reordering the Draw calls</a></li>
+    <li><a href="#packing-textures">Packing textures</a></li>
+    <li><a href="#rescaling">Rescaling</a></li>
+    <li><a href="#destination-rectangle-paramater">Destination rectangle parameter</a></li>
+    <li><a href="#scale-and-the-origin-parameter">Scale (and the origin) parameter</a></li>
+    <li><a href="#rotating">Rotating</a></li>
+    <li><a href="#setting-up-the-window-size">Setting up the window size</a></li>
+    <li><a href="#drawing-and-scrolling-the-background">Drawing and Scrolling the Background</a></li>
+</ol>
+
+<hr/>
+
+
+<h3 id="loading-the-texture"><a href="#loading-the-texture">Loading the texture</a></h3>
+
+<p>This is the image that we will draw:</p>
+<img src="/assets/flappy_bird_course/images/spritesheet.png" alt="flappy bird spritesheet" />
+<p>If you are questioning yourself if I did this image, for you I'll say: nah! I just stole it from <a
+        href="https://www.spriters-resource.com/mobile/flappybird/asset/473359/" target="_blank"
+        rel="noopener noreferrer">Sprites-Resources</a>.</p>
+
+<p class="msg"><strong>⚠️ Obviously without a proper license you can't use this image comercially, but for learning purposes it's
+        fine.</strong></p>
+
+<p>Currently there is two ways of loading assets in our project:</p>
+
+<hr />
+
+<h4 id="using-the-mgcb-editor"><a href="#using-the-mgcb-editor">Using the MGCB Editor</a></h4>
+
+<p>This is the old way of loading assets in MonoGame, it is kinda inconvenient, but it do the job.</p>
+
+<p>What the <a href="https://docs.monogame.net/articles/getting_started/tools/mgcb.html" target="_blank"
+        rel="noopener noreferrer">content pipeline</a> does is process raw media (like image and audio) into an
+    optimized format for fast reading. Usually the produced result is a <code>.xnb</code> (have you ever looked inside
+    your Terraria or Stardew Valley's Content directory?)</p>
+
+<p class="msg"><strong>💡 You can read more of the optimization proccess of the content pipeline here: <a href="https://docs.monogame.net/articles/getting_started/content_pipeline/why_content_pipeline.html" target="_blank" rel="noopener noreferrer">Why use the Content Pipeline | MonoGame</a></strong></p>
+
+<p>The problem of this tool is that everytime you need to import an asset you need to open it, you cannot automate it
+    and if you are a Linux user like me... MAUI sucks.</p>
+
+<p>It is installed by default (until MonoGame 3.8.5 at least) and you can open it by opening a terminal in the root of
+    your project and running <code>dotnet mgcb-editor Content/Content.mgcb</code></p>
+
+<p>If you are getting some error saying something that mgcb-editor don't exists, try to run
+    <code>dotnet tool restore</code> (in the root of your project) and opening it again.
+</p>
+
+<p>You will see something like this when it is open:</p>
+<img src="/assets/flappy_bird_course/images/Screenshot_20260813_194327.png" alt="mgcb-editor open" />
+
+<p>We can add our image by right clicking in the <strong>Content</strong> field in the <strong>Project</strong> panel,
+    going to <strong>Add</strong> and then <strong>Existing Item...</strong></p>
+
+<p>You will see a prompt like this when selecting your image:</p>
+<img src="/assets/flappy_bird_course/images/Screenshot_20260813_194619.png" alt="mgcb-editor open" />
+
+<ul>
+    <li><strong>Copy the file to the directory</strong>: will create a copy of the original file to the Content
+        directory of your project. This is usually the common and safe approach.</li>
+    <li><strong>Add a link to the file</strong>: will just register a reference to the file in our
+        <code>Content.mgcb</code> without copying the original file. The problem with this approach is that, if you
+        remove the original file from your hard drive before compiling it (running the process that creates the
+        optimized version of the file) you will get an error about the missing file.
+    </li>
+    <li><strong>Skip adding the file</strong>: will do... nothing... it don't even change the <code>.mgcb</code> file,
+        so... 🤔</li>
+</ul>
+
+<p>By the way, did you noticed some other options like <strong>New Folder</strong> and <strong>Rename</strong>?</p>
+
+<img src="/assets/flappy_bird_course/images/13.webp" alt="mgcb-editor open" />
+
+<p>When you select <strong>Rename</strong> option you can set the name of the optimized file that the content pipeline will produce for some file.</p>
+
+<p>The <strong>New Folder</strong> option will indeed create a directory inside the <strong>Content</strong> folder of the project and the build of our project which means that you will need to consider it when specified the path of some asset.</p>
+
+<p>By the way, perhaps you'd found a <strong>Build</strong> button in the MGCB Editor, if you press it right now, the content pipeline will process all the files that you added and will produce some <code>.xnb</code> files.</p>
+
+<p>If you have ignored it, when you build your project, the content pipeline will be triggered to proccess your files automatically. Then, the only thing you need to ensure is that the file to be process exists and you saved before closing the MGCB Editor.</p>
+
+<hr />
+
+<h4 id="using-the-new-code-first-content-builder"><a href="#using-the-new-code-first-content-builder">Using the new code-first Content Builder (MonoGame 3.8.5+ only)</a></h4>
+
+<p class="msg">😴 If you are short in time maybe you could prefer the previous approach because this one, despite don't being difficult to setup it may take some time (specially this lot of reading). I mean, even this topic being interesting (specially for the future) you can skip it.</p>
+
+<p>This is the new saviour that MonoGame's team is bringing for us, it is code only and it can be automated.</p>
+
+<p>Since it is still experimental it doesn't come with MonoGame yet, but set it up is simple.</p>
+
+<p>Btw you can read a little more about the new content pipeline through these posts:</p>
+
+<ul>
+    <li><a href="https://monogame.net/blog/2025-11-06-MonoGame-Content-Builder/" target="_blank" rel="noopener noreferrer">MonoGame Content Builder | MonoGame Blog</a></li>
+    <li><a href="https://monogame.net/blog/2026-07-15-3.8.5-release-2026/#new-content-builder" target="_blank" rel="noopener noreferrer">3.8.5 Release | MonoGame Blog</a></li>
+</ul>
+
+<p>Because even for me it's new to use this... btw, note that the proccess i'll do here can be a lot questionable lol, im not sure exactly about the small things about what I'm doing, but it works so... let's go 😉 (in any case, enter <a href="https://discord.gg/monogame" target="_blank" rel="noopener noreferrer">MonoGame's community</a> and ask about the content pipeline there).</p> 
+
+<p>The new content builder runs (or should run) in a new project, so we need to instantiate one. The <code>mgcb</code> template is already a project with the new content builder set.</p>
+
+<p>Since I will have two or more projects related I decided to recreate (or move) the project that is (or will be) the implementation of the game in a common directory:</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260814_164643.png" alt="a root directory containing both core project and content builder project" />
+
+<div class="msg">
+<p>Btw, since I use <a href="https://www.jetbrains.com/rider/" target="_blank" rel="noopener noreferrer">Jetbrains Rider</a> to work with C# mostly, I created an <strong>Empty Solution</strong> and added both projects into it.</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260814_164910.png" alt="a solution in jetbrains rider with both core project and content builder project" />
+</div>
+
+<p>Ok, probably your project folder don't have the <strong>ContentBuilder</strong> directory so open a terminal (or cmd) in the root where your core project is located and run <code>dotnet new mgcb -o ContentBuilder</code>.</p>
+
+<p>The output should be something like this:</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260814_165443.png" alt="the initial state of a mgcb template instantiated in the file explorer" />
+
+<p>Now, go to the <code>.csproj</code> of the core project and remove the reference to the old content pipeline:</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260814_181511.png" alt="removing the content pipeline package reference from the core.csproj" />
+
+<p>MonoGame's documentation also recommends that you "fixate" the version of the <code>MonoGame.Framework</code> as the same of the one in the <strong>ContentBuilder</strong> project:</p>
+
+<p><code>ContentBuilder.csproj</code>:</p>
+<img src="/assets/flappy_bird_course/images/Screenshot_20260814_182121.png" alt="the version of monogame's content pipeline and native packages in the contentbuilder.csproj" />
+
+<p><code>Core.csproj</code>:</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260814_182233.png" alt="fixing the version of the monogame's framework package in the core.csproj" />
+
+<p>The documentation also recommends that you add a <code>&#60;Import ... &#47;&#62;</code> to the <code>.csproj</code> of your core project, but since I will run the content builder manually and copy the output content into the build directory of my project I will skip this step.</p>
+
+<p>Look for the <code>Builder.cs</code> of the <strong>ContentBuilder</strong> project and set the <code>OutputDirectory</code> in the <a href="https://docs.monogame.net/api/MonoGame.Framework.Content.Pipeline.Builder.ContentBuilderParams.html" target="_blank" rel="noopener noreferrer">ContentBuilderParams</a>:</p>
+
+<pre>var contentCollectionArgs = new ContentBuilderParams()
+{
+    ...
+    OutputDirectory = "../Core",
+    ...
+};</pre>
+
+<p>The content builder already creates a directory named as <strong>Content</strong> in the output directory so you don't need to create one. By the way, do another thing, go into the root folder of the core project and remove the <strong>Content</strong> directory from there.</p>
+
+<p>Ok, let test this, just take that spritesheet and place it at the <strong>Assets</strong> directory.</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260814_192832.png" alt="showing the structure inside my ContentBuilder project" />
+
+<p>Oh, and I almost forgot to mention: if you create some directory inside <strong>Assets</strong> (like a <strong>Graphics</strong> folder) it will also be copied into the output directory 😉.</p>
+
+<p>Open a terminal in the root of the <strong>ContentBuilder</strong> folder and run <code>dotnet run</code></p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260814_193244.png" alt="showing the log of the content builder in the terminal" />
+
+<p>If we look inside our core project:</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260814_193445.png" alt="showing the log of the content builder in the terminal" />
+
+<p>Great, we need to do one last thing: copy the processed files into the build directory of our game.</p>
+
+<p>Just add this into the <code>.csproj</code> of your core project:</p>
+
+<pre>&#60;ItemGroup&#62;
+    &#60;Folder Include="Content" &#47;&#62;
+    &#60;Content Include="Content&#47;**" CopyToOutputDirectory="PreserveNewest" &#47;&#62;
+&#60;&#47;ItemGroup&#62;</pre>
+
+<p>The first line will show the <strong>Content</strong> folder in the <code>Solution Explorer</code> of <strong>Rider</strong> or <a href="https://visualstudio.microsoft.com/" target="_blank" rel="noopener noreferrer">Visual Studio</a> and the second is the one that will copy the <strong>Content</strong> folder and all it's content into the build directory.</p>
+
+<hr />
+
+<h3 id="drawing-a-texture"><a href="#drawing-a-texture">Drawing a texture</a></h3>
+
+<p>Is very easy to draw a texture in MonoGame's actually, what we need is simply:</p>
+<ol>
+    <li>Load the texture (<a href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Graphics.Texture2D.html" target="_blank" rel="noopener noreferrer">Texture2D</a>) into the code.</li>
+    <li>Have a valid instance of a <a href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Graphics.SpriteBatch.html" target="_blank" rel="noopener noreferrer">SpriteBatch</a></li>
+    <li>Draw the texture ;&#41;</li>
+</ol>
+
+<pre>private SpriteBatch _spriteBatch;
+private Texture2D _texture;
+    
+protected override void LoadContent() {
+    _spriteBatch = new SpriteBatch(GraphicsDevice);
+    _texture = Content.Load&lt;Texture2D&gt;("Graphics/spritesheet");
+}
+
+protected override void Draw(GameTime gameTime) {
+    _spriteBatch.Begin();
+    _spriteBatch.Draw(_texture, new Vector2(10f), Color.White);
+    _spriteBatch.End();
+}</pre>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260814_201641.png" alt="drawing the texture">
+
+<p>This line:</p>
+
+<pre>Content.Load&lt;Texture2D&gt;("Graphics/spritesheet")</pre>
+
+<p>Is how we load things into MonoGame, more specifically the ones processed with the content builder. The <code>Texture2D</code> is the importer that we will use for this asset in specific.</p>
+<p>Note that I didn't put the file extension in the string path. The <a href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Content.ContentManager.html" target="_blank" rel="noopener noreferrer">ContentManager</a> already knows how to handle and what is the format of the asset (or which it expects that the file be) that you're loading.</p>
+
+<p>This piece:</p>
+
+<pre>_spriteBatch.Begin();
+_spriteBatch.Draw(_texture, new Vector2(10f), Color.White);
+_spriteBatch.End();</pre>
+
+<p>Is the responsible for draw our texture, if you read all the part 1 of this course, you should remember that in some moment I mentioned that the <code>SpriteBatch</code> do batching when drawing a texture. Well there is it.</p>
+
+<p>When you call <code>Begin()</code> you start the batching process, then every call to <code>Draw(...)</code> will store some information inside the <code>SpriteBatch</code> and when: <code>End()</code> is called, the texture changes or when the <code>SpriteBatch</code> is full is that when the drawn is done.</p>
+
+<p>Basically, always when you want to draw something with the <code>SpriteBatch</code> every call to <code>Draw()</code> must be between <code>Begin()</code> and <code>End()</code>. Simple, right?</p>
+
+<hr />
+
+<h4 id="about-the-spritebatch-draw"><a href="#about-the-spritebatch-draw">About the <code>SpriteBatch.Draw</code></a></h4>
+
+<p>Perhaps you've noticed more rather than an image being drawn and the fact that with the <code>SpriteBatch</code> you always need to call <code>Begin()</code> before any <code>Draw</code> and finish by calling <code>End()</code>:</p>
+
+<ul>
+    <li>The drawn is positioned at the top left corner of the screen</li>
+    <li>What is that <a href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Vector2.html" target="_blank" rel="noopener noreferrer">Vector2</a> and <a href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Color.html" target="_blank" rel="noopener noreferrer">Color</a>?</li>
+</ul>
+
+
+<p>First, about the <strong>drawn being positioned at the top left corner of the screen</strong>.</p>
+
+<hr />
+
+<h5 id="why-the-top-left-corner"><a href="#why-the-top-left-corner">Why the top-left corner?</a></h5>
+
+<p>The top-left corner of the screen (in MonoGame) being the origin of our drawn is just a (convenient) convention that someone in the XNA age chose and MonoGame inherited.</p>
+
+<p>Actually, for OpenGL (in our case) the origin point is at the center of the screen and what for us is 0 pixels at the left and 640 pixels at the right, for it (OpenGL) is -1.0 (left) and 1.0 (right) (also called as <strong>normalized coordinates</strong>).</p>
+
+<p>Therefore, work in this unit (normalized coordinates) is very incovenient then someone created a mathematical structure that take our coordinates in pixel and convert them into the format that OpenGL expects, formally called <a href="https://www.geeksforgeeks.org/engineering-mathematics/projection-matrix/" target="_blank" rel="noopener noreferrer">Projection Matrix</a>.</p>
+
+<p>The image in your monitor is usually processed and transmitted line by line, from left to right, from top to bottom.</p>
+
+<p>So someone take these two things, merged them and now we have: a mathematical structure that converts our pixels coordinates into "OpenGL coordinates" and also make the top-left corner of the screen be the origin (0, 0) for us, to follow the pattern as the monitor transmit the image for us.</p>
+
+<p><strong>You definitely don't need to bother about this</strong> (because this subject is kinda big and confuse), just know that the top-left corner being the origin of our drawing is just because someone choose.</p>
+
+<p>We will play with matrices in the future (for creating a Camera for example), but for now you just need to know that: always when you draw something, the position (0,0) is the top-left corner of the screen and when you add into Y, you (visually) are moving down.</p>
+
+<img src="/assets/flappy_bird_course/images/drawn_origin.png" alt="diagram showing where is the (0,0) of the screen and the origin of the sprite">
+
+<p>By the way, the anchor point of your sprite/image is also set at the top left corner of the image. If you change from <code>new Vector2(10f)</code> to <code>new Vector2(0f)</code> the image will be positioned from it's top-left corner and will be placed at the top-left corner of the screen:</p>
+
+<img src="/assets/flappy_bird_course/images/drawn_origin2.png" alt="diagram showing the texture positioned at (0,0)">
+
+<p>And logically, if you do something like this <code>new Vector2(640f, 0f)</code> (position the x of the image at 640px and the y at 0px):</p>
+
+<img src="/assets/flappy_bird_course/images/drawn_origin3.png" alt="diagram showing the texture positioned at (0,0)">
+
+<p>Since the width of the screen is exactly 640px, then positioning the sprite at (640, 0) will put it outside of the screen.</p>
+
+<p>We will see more of this anchor/origin point of the sprite soon.</p>
+
+<hr />
+
+<h5 id="what-is-the-vector2-and-color"><a href="#what-is-the-vector2-and-color">What is the <code>Vector2</code> and <code>Color</code>?</a></h5>
+
+<p><code>Vector2</code> is simply a struct that contains two fields: <code>X</code> and <code>Y</code> and them usually represents position in space.</p>
+
+<p>You will usually use <code>Vector2</code> (or <code>Vector3</code>, the variant usually for 3D) to represent position, velocity, impulse, size and anything that have two dimensions.</p>
+
+<p>Thanks to C# sugar syntax, you can perform math operations with <code>Vector2</code> and many other structures, like:</p>
+
+<pre>vectorA + vectorB
+vectorA / scalar
+vectorA / vectorB
+vectorA == vectorB
+</pre>
+
+<p>The <code>Color</code> struct, as the name suggest, represents a color. It contains some fields like <code>R</code>, <code>G</code>, <code>B</code>, <code>A</code>.</p>
+
+<p>Most of the time you will use the builtin colors that the <code>Color</code> struct provides like the <code>Color.White</code>.</p>
+
+<hr />
+
+<h5 id="color-tint-and-opacity"><a href="#color-tint-and-opacity">Color tint and Opacity</a></h5>
+
+<pre>_spriteBatch.Draw(_texture, new Vector2(10f), Color.White);</pre>
+
+<p>The reason we need to "provide a color" while drawing a texture is to allow us to both tint our texture and also change its opacity (I think lol).</p>
+
+<p>Anyway, when you use a white color, the texture will be rendered with it's original colors. When you use anyother can that non white, it will be "tinted?":</p>
+
+<p class="msg">Sorry i'm not a native english speaker, so don't get surprised with me saying some shits or inventing words that doesn't exists 😂</p>
+
+<pre>_spriteBatch.Draw(_texture, new Vector2(10f), Color.Red);</pre>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260814_223346.png" alt="tinting a texture with red">
+
+<p>And if you multiply the color by some value between 0.0 to 1.0:</p>
+
+<pre>_spriteBatch.Draw(_texture, new Vector2(10f), Color.White * 0.5f);</pre>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260814_223533.png" alt="the image becomes half percent transparent">
+
+<hr />
+
+<h5 id="drawing-part-of-a-texture"><a href="#drawing-part-of-a-texture">Drawing part of a texture</a></h5>
+
+<p>MonoGame provides many overloads for the <code>SpriteBatch.Draw</code>, here a list of them:</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260814_230051.png" alt="list showing all the overloads of the spritebatch.draw">
+
+<p>The one we are using is the most basic, then let's try another very useful:</p>
+
+<pre>_spriteBatch.Draw(_texture, new Vector2(), new Rectangle(0, 0, 288, 512), Color.White);</pre>
+
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260814_230555.png" alt="drawing part of a texture">
+
+<p>Yeah, this one drew just a piece of that big texture.</p>
+
+<hr />
+
+<h4 id="texture-packing"><a href="#texture-packing">Texture packing</a></h4>
+
+<p>I think this is a good oportunity to talk a little about texture packing.</p>
+
+<p>Do you remember about that thing I said during the batching process of the <code>SpriteBatch</code>? More specifically that the draw is done (the data is flushed to the gpu) when <code>End()</code> is called, the <code>SpriteBatch</code> becomes full or <strong>when the texture change</strong>?</p>
+
+<p>When the texture changes the <code>SpriteBatch</code> will flush the data already accumulated and will restart to batch it again. And this is a problem because sending data many times (in a small interval with highly frequency) unnecessarily to GPU like this is costly and sooner or later it will become a performance issue.</p>
+
+<p>There is some solutions for this problem, one of them is reordering your <code>Draw</code> calls:</p>
+
+<hr />
+
+<h5 id="reordering-the-draw-calls"><a href="#reordering-the-draw-calls">Reordering the <code>Draw</code> calls</a></h5>
+
+<p>What we will do here is simply try to reduce the amount of state changes:</p>
+
+<pre>
+# from (3 state changes)
+Draw(textureA, ...)
+Draw(textureB, ...) # state change
+Draw(textureA, ...) # state change
+Draw(textureA, ...)
+Draw(textureB, ...) # state change
+
+# to (1 state change)
+Draw(textureA, ...)
+Draw(textureA, ...)
+Draw(textureA, ...) 
+Draw(textureB, ...) # state change
+Draw(textureB, ...)
+</pre>
+
+<p class="msg">😵‍💫 State changes here usually means early flushes.</p>
+
+<p>The problem with this approach is that the order matters:</p>
+
+<pre>
+Draw(textureA, ...)
+Draw(textureB, ...) # this sprite will be drawn over the previous one
+</pre>
+
+<p>So when you reorder your sprites you usually breaks this characteristic that if you are developing a top down game it is really important to be kept.</p>
+
+<hr />
+
+<h5 id="packing-textures"><a href="#packing-textures">Packing textures</a></h5>
+
+<p>This approach can be problematic when you have many big textures because organizing them in the atlas can be a pain in the ass, but for most of the cases, like usually with sprites it is the preferable option.</p>
+
+<p>What you will do is simply: take your sprites and merge them into one single image and draw just a piece (a region) of the entire texture:</p>
+
+<img src="/assets/flappy_bird_course/images/packing_sprites.png" alt="packing a texture">
+
+<p>The overloads of the <code>Draw</code> method that accepts a source rectangle allows us to specify the region of the entire texture that we want to draw.</p>
+
+<p>Considering the spritesheet that we are using to develop this game, we can draw the frames of the bird and a pipe in this way:</p>
+
+<pre>
+_spriteBatch.Draw(_texture, new Vector2(20f, 20f), <strong>new Rectangle(230, 762, 34, 24)</strong>, Color.White);
+_spriteBatch.Draw(_texture, new Vector2(80f, 20f), <strong>new Rectangle(230, 814, 34, 24)</strong>, Color.White);
+_spriteBatch.Draw(_texture, new Vector2(130f, 30f), <strong>new Rectangle(230, 866, 34, 24)</strong>, Color.White);
+_spriteBatch.Draw(_texture, new Vector2(180f, 30f), <strong>new Rectangle(168, 646, 51, 320)</strong>, Color.White);
+</pre>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260815_001252.png" alt="drawing parts of the texture">
+
+<p class="msg">The x and y of the (clipping) rectangle is where the cutout begins (relative to the texture size) in the texture and the width and height are the size of the cutout.</p>
+
+<p>This resolves: texture-related state changes and also you can dinamically change the drawing order.</p>
+
+<p>By the way, we will use this exact approach to animate our bird later.</p>
+
+<hr />
+
+<h4 id="rescaling"><a href="#rescaling">Rescaling</a></h4>
+
+<p>There is two ways of resizing a sprite in the <code>SpriteBatch</code>: by using the destination rectangle and the scale parameters.</p> 
+
+<p>Each one rescale the sprite in differents way:</p>
+
+<p>To easily exemplify the usage of rescaling with the destination rectangle and scale, I will use this texture:</p>
+
+<img src="/assets/flappy_bird_course/images/flappy_bird_icon.png" alt="flappy bird game's icon">
+
+<p class="msg">🫣 Yeah, the icon of the game.</p>
+
+<hr />
+
+<h5 id="destination-rectangle-paramater"><a href="#destination-rectangle-paramater">Destination rectangle parameter</a></h5>
+
+<pre>
+_spriteBatch.Draw(_texture, new Rectangle(10, 10, 256, 128), null, Color.White);
+</pre>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260815_005338.png" alt="resizing the sprite using a destination rectangle">
+
+<p class="msg">💡 If the image appears blurry after rescaling, set the <a href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Graphics.SamplerState.html" target="_blank" rel="noopener noreferrer">SamplerState</a> parameter from the <code>SpriteBatch.Begin</code> to <code>PointClamp</code>: <code>_spriteBatch.Begin(samplerState: SamplerState.PointClamp)</code>.</p>
+
+<p>The upper image is the normal one (without any scaling) and the lower one is using the destination rectangle overload.</p>
+
+<p>When you use a destintion rectangle you now can only specify the position of the sprite in integers and the dimensions is in pixels.</p>
+
+<p>The "problem" with this approach is that since now to position the sprite you need to specify the coordinates in integers some movements can look kinda "hard", a problem that  you usually don't have when you use vectors (because they use floating point fields).</p>
+
+<p>But despite that, it is really great and useful. We will use this approach to reescale a small white sprite of a square and draw the bounding boxes of some colliders in our game.</p>
+
+<p>I almost forgot to say but have you noticed the <code>null</code> I passed to the source rectangle parameter? This is because in this overload is mandatory that you specify this parameter. Passing <code>null</code> will make the <code>SpriteBatch</code> draw the whole sprite, simple like that.</p>
+
+<p class="msg">👻 Curiosity: The <a href="https://www.monogameextended.net/" target="_blank" rel="noopener noreferrer">MonoGame.Extended</a> package do some tricks with the destination rectangle, rotation and origin to draw primitive shapes since MonoGame doesn't have a ShapeBatch or ShapeRenderer natively.</p>
+
+<hr />
+
+<h5 id="scale-and-the-origin-parameter"><a href="#scale-and-the-origin-parameter">Scale (and the origin) parameter</a></h5>
+
+<p>The main difference from this parameter to the previous one is that you can keep positioning your sprites with a <code>Vector2</code>, but the scaling is now in unit scale and it consider the origin point of the sprite:</p>
+
+<pre>
+Vector2 origin = Vector2.Zero;
+float scale = 2f;
+_spriteBatch.Draw(_texture, new Vector2(100f), null, Color.White, 0f, origin, scale, SpriteEffects.None, 0f);
+</pre>
+
+<p class="msg">🥸 There is a lot of parameters here but the ones relevant for us during this course is: <code>float scale</code>, <code>Vector2 scale</code> and <code>Vector2 origin</code>.</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260815_012556.png" alt="resizing the sprite using the scale parameter">
+
+<p>The upper image is the sprite without any scale applied and the lower one is the one with the scale applied... as you have probably seen. 😴</p>
+
+<p>The first thing to note here is that, in comparison with the destination rectangle parameter, just by setting the scale to 2 makes the sprite looks twice of it's original size, and that is the fact. Setting the scale to 0.5 will make it look half of its original size and so on.</p>
+
+<p>By the way, <code>1.0</code> is the default scale.</p>
+
+<p>And the second thing is that the image is being scaled by it's top-left corner. I mean, you probably have noticed this with the destination rectangle parameter also, but differently, here you can change from where the sprite will be reescaled:</p>
+
+<pre>
+Vector2 origin = _texture.Bounds.Size.ToVector2() / 2f;
+float scale = 1f;
+_spriteBatch.Draw(_texture, new Vector2(100f), null, Color.White, 0f, origin, scale, SpriteEffects.None, 0f);
+</pre>
+
+<video src="/assets/flappy_bird_course/videos/origin.mp4" muted autoplay loop></video>
+
+<p>Interesting, right?</p>
+
+<p>The origin is meant to be set in pixel coordinates. What I'm doing with <code>_texture.Bounds.Size.ToVector2() / 2f</code> is taking half of the size of the texture in pixels.</p>
+
+<p class="msg">💡 The direct equivalent would be: <code>origin = new Vector2(32f)</code>, because the texture is 64x64.</p>
+
+<p>This will put the origin of the sprite at the center.</p>
+
+<p>By the way, there is another struct in MonoGame similar to the <code>Vector2</code>: <a href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Point.html" target="_blank" rel="noopener noreferrer">Point</a>. The main difference between them is that the fields in the <code>Vector2</code> are in <code>float</code> and in the ones in the <code>Point</code> are <code>int</code>.</p>
+
+<p>Some data like the size of the texture or the position of the mouse is stored in a <code>Point</code>, not a <code>Vector2</code>.</p>
+
+<p>The method <code>ToVector2()</code> converts the <code>Point</code> into a <code>Vector2</code>.</p>
+
+<p class="msg">Yeah, similar to the <code>ToString()</code> ;&#41;</p>
+
+<hr />
+
+<h4 id="rotating"><a href="#rotating">Rotating</a></h4>
+
+<p>Taking advantage that I mentioned about origin, you can use the <code>rotation</code> parameter to... rotate your sprite:</p>
+
+<pre>
+float angle = MathHelper.ToRadians(45f);
+_spriteBatch.Draw(_texture, new Vector2(100f), null, Color.White, angle, origin, 1f, SpriteEffects.None, 0f);
+</pre>
+
+<video src="/assets/flappy_bird_course/videos/rotating.mp4" muted autoplay loop></video>
+
+<p>First: the angle is set in radians and yeah, the origin also influences the rotation.</p>
+
+<p>I don't will use the rotation parameter in this course, but after it, maybe you can do something interesting with it.</p>
+
+<hr />
+
+<h3 id="setting-up-the-window-size"><a href="#setting-up-the-window-size">Setting up the window size</a></h3>
+
+<p>Ok let's back to the goal of this course.</p>
+<p>First, lets change the size of the window, I want to simulate a smartphone (portrait) resolution.</p>
+<p>You can change the resolution of the screen/window changing both <code>_graphics.PreferredBackBufferWidth</code> and <code>_graphics.PreferredBackBufferHeight</code></p>
+
+<p>If you change these parameters within the constructor the result is immediate. If you set it outside the constructor, like in the <code>Initialize</code> you must call <code>_graphics.ApplyChange()</code></p>
+
+<p class="msg">Actually, for any change that you make in <code>_graphics</code> outside the constructor you must call <code>ApplyChanges()</code>.</p>
+
+<pre>
+# in the constructor ApplyChanges() isn't necessary
+public Game1() {
+    ...
+    _graphics.PreferredBackBufferWidth = 288;
+    _graphics.PreferredBackBufferHeight = 512;
+}
+
+# outside the constructor it is necessary
+protected override void Initialize() {
+    ...
+    _graphics.PreferredBackBufferWidth = 288;
+    _graphics.PreferredBackBufferHeight = 512;
+    _graphics.ApplyChanges(); // needed!
+
+    base.Initialize(); // don't remove this! I explain why in the first chapter
+}
+</pre>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260815_024048.png" alt="resizing the window">
+
+<p class="msg">By default the resolution that MonoGame set is 800x480.</p>
+
+<hr />
+
+<h3 id="drawing-and-scrolling-the-background"><a href="#drawing-and-scrolling-the-background">Drawing and Scrolling the Background</a></h3>
+
+<p>After everything I've shown previously, this should be straight:</p>
+
+<pre>
+public class Game1 : Game {
+    ...
+    private float _bgScrollSpeed = 1f;
+
+    private Rectangle _bgSrcRect = new Rectangle(0, 0, 288, 512);
+    private Vector2 _bgPos;
+    
+    ...
+    
+    protected override void Update(GameTime gameTime)
+    {
+        ...
+
+        _bgPos.X -= _bgScrollSpeed;
+        if (_bgPos.X + _bgSrcRect.Width < 0f)
+            _bgPos.X = 0f;
+
+        ...
+    }
+
+    protected override void Draw(GameTime gameTime)
+    {
+        ...
+
+        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        _spriteBatch.Draw(_texture, _bgPos, _bgSrcRect, Color.White);
+        _spriteBatch.End();
+
+        ...
+    }
+}
+</pre>
+
+<video src="/assets/flappy_bird_course/videos/background_scrolling.mp4" muted autoplay loop></video>
+
+<p>The idea is simple: we are just moving the image by 1px per frame and when the right side of the image <code>(x + width)</code> reaches <code>0</code> (left bound of the screen) we just reset it <code>X</code> position.</p>
+
+<p>To make it look infinitely we just need to duplicate the drawing and reposition it:</p>
+
+<pre>
+public class Game1 : Game {
+    ...
+    private float _bgScrollSpeed = 1f;
+
+    private Rectangle _bgSrcRect = new Rectangle(0, 0, 288, 512);
+
+    private Vector2 _bgPos1;
+    private Vector2 _bgPos2 = new Vector2(288f, 0f);
+    
+    ...
+    
+    protected override void Update(GameTime gameTime)
+    {
+        ...
+
+        _bgPos1.X -= _bgScrollSpeed;
+        if (_bgPos1.X + _bgSrcRect.Width < 0f)
+            _bgPos1.X = 0f;
+
+        var windowWidth = _graphics.PreferredBackBufferWidth;
+        _bgPos2.X -= _bgScrollSpeed;
+        if (_bgPos2.X + _bgSrcRect.Width < windowWidth)
+            _bgPos2.X = windowWidth;
+
+        ...
+    }
+
+    protected override void Draw(GameTime gameTime)
+    {
+        ...
+
+        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        _spriteBatch.Draw(_texture, _bgPos1, _bgSrcRect, Color.White);
+        _spriteBatch.Draw(_texture, _bgPos2, _bgSrcRect, Color.White);
+        _spriteBatch.End();
+
+        ...
+    }
+}
+</pre>
+
+<video src="/assets/flappy_bird_course/videos/duplicating_the_background_for_infinite_scrolling.mp4" muted autoplay loop></video>
+
+<p>We are setting the initial position of the second background to the exact right side of the first one then we scroll it by 1px per frame and when the right side of the second drawn reaches the right side of the screen edge we reset it's position to where it was initially.</p>
+
+<p>I mean, while the first drawn is scrolling to the outside of the screen, the second one is scrolling into the screen.</p>
+
+<p>When the first drawn is entirely outside of the screen it moves back to it's initial position, likewise, when the second drawn outside of the screen is entirely within the screen (visible) it moves back to where it was before.</p>
+
+<p>Giving us this beautiful infinite scroll effect.</p>
+
+<hr />
+
+<p>I said more here than in the first part? 🤔</p>
+
+<p>Well, anyway, if you read so far <strong>thank yoooou so much</strong> 😍 for the effort. I know, some parts here are incorrect, or are unecessary, or maybe confuse, but despite that I hope I managed to help you in something.</p>
+
+<p>In the next episode we will draw the ground and also start to implement the pipes, see you soon 👋.</p>

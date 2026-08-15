@@ -7,10 +7,12 @@ body {
   max-width: 960px;
   margin: auto;
   padding: 1rem;
+  background: #EEEEEE;
+  line-height: 1.4;
 }
 
 a {
-  color: blue;
+  color: #e7001f;
   text-decoration: none;
 }
 
@@ -34,6 +36,10 @@ nav > ul > li > a {
   margin-bottom: 2rem;
 }
 
+.footer {
+  margin-top: 2rem;
+}
+
 table {
   border-collapse: collapse;
 }
@@ -54,8 +60,28 @@ code, pre {
 
 pre {
   overflow-x: scroll;
+  padding: 0.8rem 1.2rem;
+  border: 1px solid #AAAAAA;
 }
 
 img, video {
   max-width: 100%;
+}
+
+.msg {
+  background: #EFEFEF;
+  padding: 0.5rem;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.msg::before {
+  content:"";
+  display: flex;
+  position: absolute;
+  background: #e70059;
+  width: 0.2rem;
+  height: 100%;
+  left: 0;
+  top: 0;
 }

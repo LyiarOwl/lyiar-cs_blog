@@ -35,6 +35,8 @@ module.exports = function(eleventyConfig) {
     htmlTemplateEngine: "njk",
     dataTemplateEngine: "njk",
 
+    // pathPrefix: "/nome-do-repositorio/",
+
     // Estrutura de diretórios do projeto
     dir: {
       input: "src",          // Pasta onde ficam suas páginas e layouts

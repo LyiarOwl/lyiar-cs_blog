@@ -1,2 +1,5 @@
 node_modules
 _site
+*.log
+Thumbs.db
+.DS_Store
