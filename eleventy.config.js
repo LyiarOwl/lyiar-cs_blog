@@ -35,7 +35,7 @@ module.exports = function(eleventyConfig) {
     htmlTemplateEngine: "njk",
     dataTemplateEngine: "njk",
 
-    // pathPrefix: "/nome-do-repositorio/",
+    pathPrefix: "/lyiar-cs_blog/",
 
     // Estrutura de diretórios do projeto
     dir: {
