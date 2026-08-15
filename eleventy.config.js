@@ -1,4 +1,7 @@
+const { EleventyHtmlBasePlugin } = require("@11ty/eleventy")
+
 module.exports = function(eleventyConfig) {
+  eleventyConfig.addPlugin(EleventyHtmlBasePlugin);
   
   // 1. PASSTHROUGH COPY (Copiar arquivos estáticos diretamente)
   // Copia pastas/arquivos para a pasta final de saída sem processá-los
