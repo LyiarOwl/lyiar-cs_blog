@@ -23,31 +23,31 @@ createdAt: 12/08/2026
 <h4>Summary:</h4>
 <ol>
     <li>
-        <a href="#installing-monogame-and-creating-a-project">Installing MonoGame and Creating a Project</a>
+        <a href="{{ page.url }}#installing-monogame-and-creating-a-project">Installing MonoGame and Creating a Project</a>
     </li>
     <li>
-        <a href="#templates-and-its-rendering-backend">Templates and its rendering backend</a>
+        <a href="{{ page.url }}#templates-and-its-rendering-backend">Templates and its rendering backend</a>
     </li>
     <li>
-        <a href="#opening-the-project">Opening the project</a>
+        <a href="{{ page.url }}#opening-the-project">Opening the project</a>
     </li>
     <li>
-        <a href="#spritebatch-and-batching">SpriteBatch and... batching</a>
+        <a href="{{ page.url }}#spritebatch-and-batching">SpriteBatch and... batching</a>
     </li>
     <li>
-        <a href="#initialize-loadcontent-and-graphicsdevice-availability">Initialize, LoadContent and the GraphicsDevice
+        <a href="{{ page.url }}#initialize-loadcontent-and-graphicsdevice-availability">Initialize, LoadContent and the GraphicsDevice
             availability</a>
     </li>
     <li>
-        <a href="#how-do-i-change-the-fps">Fixed time step and How do I change the FPS?</a>
+        <a href="{{ page.url }}#how-do-i-change-the-fps">Fixed time step and How do I change the FPS?</a>
     </li>
     <li>
-        <a href="#unloadcontent-dispose">UnloadContent and Dispose</a>
+        <a href="{{ page.url }}#unloadcontent-dispose">UnloadContent and Dispose</a>
     </li>
 </ol>
 <hr/>
 <h3 id="installing-monogame-and-creating-a-project">
-    <a href="#installing-monogame-and-creating-a-project">Installing MonoGame and Creating a Project</a>
+    <a href="{{ page.url }}#installing-monogame-and-creating-a-project">Installing MonoGame and Creating a Project</a>
 </h3>
 <p>Ok, for develop with MonoGame we need a project that already contains MonoGame... Actually, you can set MonoGame
     manually by adding the necessary packages into a Console application, but we can avoid doing this everytime we want to
@@ -100,7 +100,7 @@ createdAt: 12/08/2026
 </p>
 <hr/>
 <h4 id="templates-and-its-rendering-backend">
-    <a href="#templates-and-its-rendering-backend">Templates and its rendering backend</a>
+    <a href="{{ page.url }}#templates-and-its-rendering-backend">Templates and its rendering backend</a>
     (skippable)</h4>
 <p>Since I mentioned OpenGL: the other templates
     <code>mgdesktopvk</code>
@@ -147,7 +147,7 @@ createdAt: 12/08/2026
     of the dotnet core.</p>
 <hr/>
 <h3 id="opening-the-project">
-    <a href="#opening-the-project">Opening the project</a>
+    <a href="{{ page.url }}#opening-the-project">Opening the project</a>
 </h3>
 <p>Nice, if you load your project into some code editor like VSCode you will see three things: the
     <code>Content</code>
@@ -220,7 +220,7 @@ createdAt: 12/08/2026
     as sprite.</p>
 <hr/>
 <h4 id="spritebatch-and-batching">
-    <a href="#spritebatch-and-batching">SpriteBatch and... batching</a>
+    <a href="{{ page.url }}#spritebatch-and-batching">SpriteBatch and... batching</a>
     (skippable)
 </h4>
 <p>The word
@@ -329,7 +329,7 @@ and will draw in the future (usually when <code>End()</code> is called).</p> -->
 </p>
 <hr/>
 <h4 id="initialize-loadcontent-and-graphicsdevice-availability">
-    <a href="#initialize-loadcontent-and-graphicsdevice-availability">Initialize, LoadContent and the GraphicsDevice
+    <a href="{{ page.url }}#initialize-loadcontent-and-graphicsdevice-availability">Initialize, LoadContent and the GraphicsDevice
         availability</a>
     (skippable)</h4>
 <p>By the way, do you remember about the
@@ -383,7 +383,7 @@ and will draw in the future (usually when <code>End()</code> is called).</p> -->
     being called in loop until you application ends.</p>
 <hr/>
 <h4 id="how-do-i-change-the-fps">
-    <a href="#how-do-i-change-the-fps">Fixed time step and How do I change the FPS?</a>
+    <a href="{{ page.url }}#how-do-i-change-the-fps">Fixed time step and How do I change the FPS?</a>
     (skippable)</h4>
 <p>I'm not sure about this (I'm sorry, perhaps I interpreted the section about the game loop in this
     <a
@@ -463,7 +463,7 @@ and will draw in the future (usually when <code>End()</code> is called).</p> -->
     you the need of changing these properties, so knowing about this could be helpful, right? 😅</p>
 <hr/>
 <h4 id="unloadcontent-dispose">
-    <a href="#unloadcontent-dispose">UnloadContent and Dispose</a>
+    <a href="{{ page.url }}#unloadcontent-dispose">UnloadContent and Dispose</a>
 </h4>
 <p>Finally, I didn't mentioned initially but there are also other two methods that we can override and are very useful:
     the
