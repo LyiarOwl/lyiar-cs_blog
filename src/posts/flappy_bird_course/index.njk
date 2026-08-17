@@ -52,14 +52,14 @@ createdAt: 12/08/2026
 <p>Ok, for develop with MonoGame we need a project that already contains MonoGame... Actually, you can set MonoGame
     manually by adding the necessary packages into a Console application, but we can avoid doing this everytime we want to
     develop with MonoGame by instantiating one of it's templates.</p>
-<p>If you don't have MonoGame installed (which would be weird) you can learn how to install it directly from
+<p>If you don't have MonoGame installed you can learn how to install it by following
     <a
         href="https://docs.monogame.net/articles/getting_started/index.html"
         target="_blank"
         rel="noopener noreferrer"
         title="Getting Started | MonoGame (opens in a new tab)">MonoGame's documentation</a>. Look for the sections
                       about "Setting Up" in Mac OS,
-                      Linux or Windows.</p>
+                      Linux or Windows. There you'll find informations more reliable than here about this step.</p>
 <p>And why not to mention that I'm considering that you already familiar with programming and CSharp which means that I
     don't will teach about the language. If you don't know nothing about CSharp or even nothing about programming 😳 here
     are some suggestions:</p>
@@ -69,18 +69,24 @@ createdAt: 12/08/2026
             href="https://www.youtube.com/watch?v=GhQdlIFylQ8"
             target="_blank"
             rel="noopener noreferrer"
-            title="(opens in a new tab)">FreeCodeCamp - C# Tutorial - Full Course for Beginners (YouTube, English)</a>
+            title="(opens in a new tab)">C# Tutorial - Full Course for Beginners - FreeCodeCamp (YouTube, English)</a>
     </li>
     <li>
-        <a href="https://youtu.be/PKMm-cHe56g" target="_blank" rel="noopener noreferrer" title="(opens in a new tab)">Victor
-            Lima - Curso de C# - Aprenda o essencial em 5 HORAS (Youtube, Brazilian Portuguese)</a>
+        <a href="https://youtu.be/PKMm-cHe56g" target="_blank" rel="noopener noreferrer" title="(opens in a new tab)">Curso de C# - Aprenda o essencial em 5 HORAS - Victor
+            Lima (Youtube, Brazilian Portuguese)</a>
     </li>
     <li>
         <a
             href="https://learn.microsoft.com/en-us/dotnet/csharp/"
             target="_blank"
             rel="noopener noreferrer"
-            title="(opens in a new tab)">Microsoft - Learn C# (Microsoft's Documentation, English and Portuguese)</a>
+            title="(opens in a new tab)">Learn C# (Microsoft's Documentation, English and Portuguese)</a>
+    </li>
+    <li>
+        <a href="https://learn.microsoft.com/en-us/dotnet/csharp/tour-of-csharp/tutorials/" target="_blank" rel="noopener noreferrer">Introduction to C# (Microsoft's Documentation, English)</a>
+    </li>
+    <li>
+        <a href="https://learn.microsoft.com/en-us/shows/csharp-fundamentals-for-absolute-beginners/" target="_blank" rel="noopener noreferrer">C# Fundamentals for Absolute Beginners (Microsoft's Documentation, English)</a>
     </li>
 </ul>
 <p>Okidoki, considering that you have the templates installed lets instantiate one:</p>
@@ -271,7 +277,7 @@ and will draw in the future (usually when <code>End()</code> is called).</p> -->
     problem is that sending information to the GPU can be costly specially if you need to do this with a high frequency in
     small intervals. There are some things that you can do to mitigate this overhead like accumulating the many informations
     as you can and send them at once to the GPU and/or try to reorder your statements to reduce state changing.</p>
-<p>Briefly: state change is the needy of the GPU and the graphics driver to reconfigure itself when something change
+<p>Briefly: state change is the need for the GPU and the graphics driver to reconfigure itself when something change
     like when you are drawing two different textures and this operation, is costly. Costly in the sense that many of this
     overhead accumulated would result in low FPS.</p>
 <p>Ok, do you remember what I said about "accumulating the many informations as you can and send at once to the GPU"?
@@ -296,7 +302,7 @@ and will draw in the future (usually when <code>End()</code> is called).</p> -->
     Content.RootDirectory = "Content";
     IsMouseVisible = true;
 }</pre>
-<p>Considering I said earlier, the first line within the constrcutor here should be straight.</p>
+<p>Considering what I said earlier, the first line within the constrcutor here should be direct.</p>
 <p>
     <code>Content.RootDirectory</code>
     is the place where MonoGame will look when you are loading some asset with the
@@ -434,12 +440,7 @@ and will draw in the future (usually when <code>End()</code> is called).</p> -->
     <code>1.0/60.0</code>
     (or 60
               UPS).</p>
-<p>
-    <em>Everything change you do in the
-        <code>_graphics</code>
-        outside of the constructor you need to call
-        <code>_graphics.ApplyChanges()</code>!</em>
-</p>
+
 <p>According with my test changing the
     <code>TargetElapsedTime</code>
     change how many updates you can have per frame
