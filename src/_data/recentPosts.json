@@ -10,5 +10,9 @@
     {
         "title": "Flappy Bird Course - Loading and Texture and Drawing the Background (part 2)",
         "path": "/posts/flappy_bird_course/part2"
+    },
+    {
+        "title": "Flappy Bird Course - Drawing the Ground and Implementing the Pipes (part 3)",
+        "path": "/posts/flappy_bird_course/part3"
     }
 ]

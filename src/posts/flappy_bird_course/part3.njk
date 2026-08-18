@@ -6,14 +6,598 @@ createdAt: ??/08/2026
 
 <h2>{{ title }}</h2>
 
+<p>Hellooooo 🤟</p>
+
+<p>How are you?</p>
+
+<p>In this chapter we will draw the ground and also implement the pipes.</p>
+
 <p>Demo of this chapter done:</p>
 
-<video src="/assets/flappy_bird_course/videos/some.mp4" muted autoplay loop></video>
+<video src="/assets/flappy_bird_course/videos/generating_pipes_with_random_y.mp4" autoplay loop muted></video>
 
-<p>If you haven't read the previous chapter yet: <a href="/posts/flappy_bird_course/part2">Loading a Texture and Drawing the Background (part 2)</a></p>
+<p>If you haven't read the previous chapter yet: <a href="/posts/flappy_bird_course/part2">Loading a Texture and Drawing
+        the Background (part 2)</a></p>
 
-<hr/>
- 
+<hr />
+
 <h4>Summary:</h4>
+<ul>
+    <li><a href="{{page.url}}#drawing-the-ground">Drawing the ground</a></li>
+    <li><a href="{{page.url}}#implementing-the-pipes">Implementing the Pipes</a></li>
+    <li><a href="{{page.url}}#timer">Timer</a></li>
+    <li><a href="{{page.url}}#counting-frames">Counting Frames</a></li>
+    <li><a href="{{page.url}}#delta-time">Delta Time</a></li>
+    <li><a href="{{page.url}}#spawning-pipes">Spawning Pipes</a></li>
+    <li><a href="{{page.url}}#creating-pipes-at-random-y">Creating Pipes at random Y</a></li>
+</ul>
+
+<hr />
+
+<h3 id="drawing-the-ground"><a href="{{page.url}}#drawing-the-ground">Drawing the ground</a></h3>
+
+<p>Let's begin with the ground because it is straight and simple, we will do almost the same as we did to draw and
+    scroll the background:</p>
+
+<pre>
+public class Game1 : Game 
+{
+    ...
+    private float _bgScrollSpeed = 0.5f; // changed
+    private float _groundScrollSpeed = 2f;
+
+    ...
+    
+    private Rectangle _groundSrcRect = new Rectangle(584, 0, 336, 112);
+    private Vector2 _groundPos1;
+    private Vector2 _groundPos2 = new Vector2(336f, 0f);
+    
+    ...
+
+    protected override void Initialize()
+    {
+        var windowHeight = _graphics.PreferredBackBufferHeight;
+        _groundPos1.Y = windowHeight - _groundSrcRect.Height;
+        _groundPos2.Y = _groundPos1.Y;
+        
+        base.Initialize();
+    }
+
+    ...
+
+    protected override void Update(GameTime gameTime)
+    {
+        ...
+        
+        _groundPos1.X -= _groundScrollSpeed;
+        if (_groundPos1.X + _groundSrcRect.Width < 0f)
+            _groundPos1.X = 0f;
+        
+        _groundPos2.X -= _groundScrollSpeed;
+        if (_groundPos2.X + _groundSrcRect.Width < windowWidth)
+            _groundPos2.X = windowWidth;
+
+        base.Update(gameTime);
+    }
+
+    protected override void Draw(GameTime gameTime)
+    {
+        GraphicsDevice.Clear(Color.CornflowerBlue);
+
+        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        
+        ...
+        
+        _spriteBatch.Draw(_texture, _groundPos1, _groundSrcRect, Color.White);
+        _spriteBatch.Draw(_texture, _groundPos2, _groundSrcRect, Color.White);
+        
+        _spriteBatch.End();
+
+        base.Draw(gameTime);
+    }
+}
+</pre>
+
+<video src="/assets/flappy_bird_course/videos/ground_added_and_scrolling.mp4" autoplay muted loop></video>
+
+<p>The idea is pratically the same, so much that I just duplicated the code that draw and scroll the background and did
+    a few changes:</p>
+
+<ul>
+    <li>Update the source rectangle to matches where the ground is located in the texture atlas/spritesheet.</li>
+    <li>Changed the ground initial position.</li>
+    <li>Created a second scroll speed variable to create a parallax effect.</li>
+</ul>
+
+<p>Just for organization, lets move the blocks of code in the <code>Update</code> method to isolated methods:</p>
+
+<pre>
+protected override void Update(GameTime gameTime)
+{
+    ...
+
+    ScrollBackground();
+    ScrollGround();
+
+    ...
+}
+
+private void ScrollBackground()
+{
+    _bgPos1.X -= _bgScrollSpeed;
+    if (_bgPos1.X + _bgSrcRect.Width < 0f)
+        _bgPos1.X = 0f;
+    
+    _bgPos2.X -= _bgScrollSpeed;
+    var windowWidth = _graphics.PreferredBackBufferWidth;
+    if (_bgPos2.X + _bgSrcRect.Width < windowWidth)
+        _bgPos2.X = windowWidth;
+}
+
+private void ScrollGround()
+{
+    _groundPos1.X -= _groundScrollSpeed;
+    if (_groundPos1.X + _groundSrcRect.Width < 0f)
+        _groundPos1.X = 0f;
+    
+    _groundPos2.X -= _groundScrollSpeed;
+    var windowWidth = _graphics.PreferredBackBufferWidth;
+    if (_groundPos2.X + _groundSrcRect.Width < windowWidth)
+        _groundPos2.X = windowWidth;
+}
+</pre>
+
+<hr />
+
+<h3 id="implementing-the-pipes"><a href="{{ page.url }}#implementing-the-pipes">Implementing the Pipes</a></h3>
+
+<p>My idea to implement the pipes is the following:</p>
+<ul>
+    <li>We will have just one class that will draw and handle both (top and bottom) pipes.</li>
+    <li>Each pipe will have it's internal position, but the class will exposes a global position property that when
+        updated will update both pipes.</li>
+    <li>I want to position the pipes from a point in the center.</li>
+    <li>We will create two rectangles to serve as collider for each pipe.</li>
+</ul>
+
+<p>Something like:</p>
+
+<img src="/assets/flappy_bird_course/images/pipe_implementation_idea.png"
+    alt="diagram showing my idea to implement the pipe">
+
+<pre>
+public class Pipe
+{
+    private readonly Texture2D _texture;
+    private Vector2 _position;
+    private Rectangle _topPipeSrcRect = new Rectangle(112, 646, 52, 320);
+    private Rectangle _bottomPipeSrcRect = new Rectangle(168, 646, 52, 320);
+
+    public Vector2 TopPipePosition { get; private set; }
+    public Vector2 BottomPipePosition { get; private set; }
+
+    public Vector2 Position
+    {
+        get => _position;
+        set
+        {
+            float halfPipeWidth = _topPipeSrcRect.Width / 2f;
+            float pipeHeight = _topPipeSrcRect.Height;
+            float halfGap = GapBetweenPipes / 2f;
+
+            TopPipePosition = new Vector2(value.X - halfPipeWidth, value.Y - pipeHeight - halfGap);
+            BottomPipePosition = new Vector2(value.X - halfPipeWidth, value.Y + halfGap);
+
+            _position = value;
+        }
+    }
+
+    public float GapBetweenPipes = 90f;
+
+    public Pipe(Texture2D texture, Vector2 position)
+    {
+        _texture = texture;
+        Position = position;
+    }
+
+    public void Draw(SpriteBatch batch)
+    {
+        batch.Draw(_texture, TopPipePosition, _topPipeSrcRect, Color.White);
+        batch.Draw(_texture, BottomPipePosition, _bottomPipeSrcRect, Color.White);
+    }
+}
+</pre>
+
+<p>First, I'm storing a reference of the texture inside the class.</p>
+
+<p>Actually, since I'm using the texture just inside the <code>Draw</code>, we could even pass it via parameter
+    (something like <code>Draw(SpriteBatch batch, Texture2D texture)</code>).</p>
+
+<p>Then I'm defining the source rectangles (or clipping rectangles) for drawing just the top and bottom pipes from the
+    texture atlas/spritesheet.</p>
+
+<p>We need two <code>Vector2</code> for each pipe, because each <code>SpriteBatch.Draw</code> requires it.</p>
+
+<p>I'm exposing both <code>TopPipePosition</code> and <code>BottomPipePosition</code> as (public) get and private set
+    because I don't want to set different positions for the pipes in the same pipes set. That is, both pipes must follow
+    a common point. Actually we could even make this field private, but perhaps you need the position of some pipe for
+    something.</p>
+
+<p>Then comes the <code>Position</code> property with a custom setter:</p>
+
+<p>Always when we update the position of the pipe
+    (<code>pipe.Position = somewhere</code>) we need to update both pipes to follow that common point.</p>
+
+<p>The first thing I'm getting is half of the width of the pipe.</p>
+
+<p>Because since the anchor point of the sprite is at the top-left corner (remember?) to center it at some point we just
+    need to move it half of it's own width or height.</p>
+
+<p>So we will make both <code>TopPipePosition</code> and <code>BottomPipePosition</code> have the exact position as the
+    common point in the <code>X</code> and <code>Y</code> and subtract <code>pipeWidth / 2</code> in the
+    <code>X</code>-axis to center them horizontally at this point.
+</p>
+
+<p>In the <code>Y</code>-axis, the bottom pipe (the pipe that points upward) is pratically correct, so let's focus on
+    the top one.</p>
+
+<p>As we did with the ground, we need to subtract the whole height of the pipe from it's <code>Y</code>-axis to position
+    the bottom part of the image at the global position (or the top of the bottom pipe).</p>
+
+<p>Nice, things are almost perfect now, except that both pipes will be glued together.</p>
+
+<p>To solve this, we just need to subtract a gap from the top pipe and add to the bottom pipe. That is the goal of the
+    <code>GapBetweenPipes</code> (or the <code>halfGap</code>).
+</p>
+
+
+
+<p>If we create an instance of the pipe:</p>
+
+<pre>
+public class Game1 : Game
+{
+    ...
+
+    private Pipe _pipe;
+
+    ...
+
+    protected override void LoadContent()
+    {
+        ...
+
+        Vector2 windowCenter = new Vector2(
+            _graphics.PreferredBackBufferWidth / 2f, 
+            _graphics.PreferredBackBufferHeight / 2f
+        );
+        _pipe = new Pipe(_texture, windowCenter);
+    }
+
+    ...
+
+    protected override void Draw(GameTime gameTime)
+    {
+        ...
+
+        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
+        ...
+
+        _pipe.Draw(_spriteBatch);
+        
+        _spriteBatch.End();
+
+        ...
+    }
+}
+</pre>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260816_155939.png"
+    alt="placing the pipe at the center of the screen">
+
+<p>Nice, we have our pipes now. It doesn't have the colliders yet but just for a while.</p>
+
+<p>Now we need to spawn pipes infinitely after some interval, scroll them across the screen and remove them later.</p>
+
+<hr />
+
+<h3 id="timer"><a href="{{ page.url }}#timer">Timer</a></h3>
+
+<p>I decided to make this a dedicated section because the idea here can be expanded and used in many different
+    situations.</p>
+
+<p>There is many ways of implementing a timer, but I'll consider just one here:</p>
+
+<p class="msg">Why just this one? Personal preference, this approach is I use the most, but for sure you can use any other approach if you prefer 😜.
+</p>
+
+<hr />
+
+<h4 id="delta-time"><a href="{{page.url}}#delta-time">Delta Time</a></h4>
+
+<p>In short, delta time is the interval between the current frame and the previous one.</p>
+
+<p>You usually use this interval to compensate UPS/FPS oscilations that is very common in different hardwares.</p>
+
+<p>If you want to know more about this:</p>
+
+<ul>
+    <li><a href="https://www.youtube.com/watch?v=rWtfClpWSb8" target="_blank" rel="noopener noreferrer">Understanding
+            framerate independence and deltatime - ClearCode (YouTube)</a></li>
+    <li><a href="https://www.youtube.com/watch?v=yGhfUcPjXuE" target="_blank" rel="noopener noreferrer">Dear Game
+            Developers, Stop Messing This Up! - Jonas Tyroller (YouTube)</a></li>
+    <li><a href="https://www.youtube.com/watch?v=yZl9X47cHi8" target="_blank" rel="noopener noreferrer"> SDL3 Game Loop,
+            Frames Per Second (FPS) Counter, Delta Time, [SDL3 Episode 11] - Mike Shah (YouTube)</a></li>
+</ul>
+
+<p>By the way, we should use this during the background scroll, but I decided to avoid it at least during this course.
+</p>
+
+<p>But for this case, using delta time to create a timer is really convenient.</p>
+
+<p>In MonoGame you retrieve the delta time from the <a
+        href="https://docs.monogame.net/api/Microsoft.Xna.Framework.GameTime.html" target="_blank"
+        rel="noopener noreferrer">GameTime</a> parameter from both <code>Update</code> and <code>Draw</code> methods:
+</p>
+
+<pre>
+float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+</pre>
+
+<p>To create a timer with this is very simple:</p>
+
+<pre>
+float _elapsed;
+float _interval = 2f; // 2 second
+bool _isRunning = true;
+
+Update(GameTime gameTime) {
+    float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+    if (_isRunning) {
+        _elapsed += delta;
+        if (_elapsed >= _interval) {
+            // do something
+            
+            _isRunning = false;
+            _elapsed = 0f;
+        }
+    }
+}
+</pre>
+
+<p>When you accumulate the delta time (the interval) between frames, in one second you will have exactly... one second
+    😱 (or almost).</p>
+
+<p>This approach is usually safe, but it still have some problems:</p>
+
+<ul>
+    <li>If during the timer your game "freeze" for an interval bigger than the interval set in your timer, when you game
+        return to life, the timer will finish immediatelly. For example, you timer is set to 2 seconds and your game
+        freezes for 3 seconds, the delta time will be of 3 seconds so... you alarm finishes.</li>
+    <li>We don't have a guarantee that the current delta time will be the exact same value in the next frame, or the
+        same as the previous one, which means that, in a looping timer, sometimes it will end later or earlier.</li>
+</ul>
+
+<p>To mitigate the problem of the delta time getting bigger than the interval of your timer:</p>
+
+<pre>
+...
+float _maxDelta = 1f / 20f; // 20 FPS
+
+Update(GameTime gameTime) {
+    float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+    if (_isRunning) {
+        <strong>float frameTime = MathF.Min(_maxDelta, delta);</strong>
+
+        <strong>_elapsed += frameTime;</strong>
+        if (_elapsed >= _interval) { ... }
+    }
+}
+</pre>
+
+<p class="msg">🥸 By the way, this approach presented by <a href="https://gafferongames.com/post/fix_your_timestep/"
+        target="_blank" rel="noopener noreferrer">Glenn Fiedler</a> is really interesting and important, specially in
+    context of physics engines (We'll use one in the future). Not every situation need to follow this pattern, but some
+    (like this one) might be interesting to consider.</p>
+
+<p>The idea is simple:</p>
+
+<pre>
+# normal
+delta = 0.016s (60 FPS)
+
+frameTime = min(0.05, 0.016)
+frameTime = 0.016
+
+# lag
+delta = 0.2s (5 FPS)
+
+frameTime = min(0.05, 0.2)
+frameTime = 0.05s
+</pre>
+
+<p>As you can see in the "lag" situation, by clamping the interval we are ignoring about of 150 ms delay.</p>
+
+<p class="msg">💡 If for some reason you want to change the <strong>max delta</strong> interval, for safety choose a value between <code>15</code> to <code>30</code> FPS.</p>
+
+<p>And to fix the problem when you timer need to loop:</p>
+
+<pre>
+float _elapsed;
+float _interval = 2f; // 2 second
+bool _isRunning = true;
+
+Update(GameTime gameTime) {
+    float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+    if (_isRunning) {
+        float frameTime = MathF.Min(_maxDelta, delta);
+        _elapsed += frameTime;
+        
+        if (_elapsed >= _interval) {
+            // do something
+            
+            <strong>_elapsed -= interval;</strong>
+        }
+    }
+}
+</pre>
+
+<p>We just need to subtract the interval that we are trying to reach from the accumulated interval. If during the
+    current loop remain some accumulate interval it will compensate some delta variation in the next loop cycle.</p>
+
+<p class="msg">💡 Doing this only is necessary if you need a looping timer, if you timer will run just once or a few times, you can set <code>_elapsed</code> to <code>0</code> and your <code>_isRunning</code> to <code>false</code> directly.</p>
+
+<p>Nice, this looping timer is exactly what we'll need to spawn our pipes.</p>
+
+<hr />
+
+<h3 id="spawning-pipes"><a href="{{page.url}}#spawning-pipes">Spawning Pipes</a></h3>
+
+<p>We will need a dynamic array to store and destroy pipes dinamically and some variables for the timer:</p>
+
+<pre>
+public class Game1 : Game {
+    ...
+    private List&lt;Pipe&gt; _pipes = [];
+    private Vector2 _initialPipesPosition;
+
+    private float _pipesSpawnInterval = 1.5f;
+    private float _pipesSpawnElapsed;
+    private float _maxDelta = 1f / 20f; 
+    ...
+    protected override void Initialize()
+    {
+        ...
+        <strong>
+        _initialPipesPosition = new Vector2(
+            _graphics.PreferredBackBufferWidth + 30f, // window width + 30px 
+            _graphics.PreferredBackBufferHeight / 2f
+        );
+        </strong>
+        ...
+    }
+    ...
+    protected override void Update(GameTime gameTime)
+    {
+        ...
+        ScrollGround();
+        <strong>
+        HandlePipesSpawning(gameTime);
+        ScrollPipes();
+        DestroyPipesOutsideScreen();
+
+        Console.WriteLine(_pipes.Count);
+        </strong>
+        ...
+    }
+    <strong>
+    private void HandlePipesSpawning(GameTime gameTime)</strong>
+    {
+        float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        float frameTime = MathF.Min(_maxDelta, delta);
+        _pipesSpawnElapsed += frameTime;
+        if (_pipesSpawnElapsed >= _pipesSpawnInterval)
+        {
+            CreatePipe();
+            _pipesSpawnElapsed -= _pipesSpawnInterval;
+        }
+    }
+    <strong>
+    private void CreatePipe()</strong>
+    {
+        var pipe = new Pipe(_texture, _initialPipesPosition);
+        _pipes.Add(pipe);
+    }
+    <strong>
+    private void ScrollPipes()</strong>
+    {
+        foreach (var pipe in _pipes)
+        {
+            var position = pipe.Position;
+            position.X -= _groundScrollSpeed;
+            pipe.Position = position;
+        }
+    }
+    <strong>
+    private void DestroyPipesOutsideScreen()</strong>
+    {
+        for (int i = 0; i &lt; _pipes.Count; i++)
+        {
+            var pipe = _pipes[i];
+            if (pipe.Position.X + 30f &lt; 0f)
+                _pipes.RemoveAt(i);
+        }
+    }
+
+    ...
+
+    protected override void Draw(GameTime gameTime)
+    {
+        ...
+        <strong>
+        foreach (var pipe in _pipes)
+            pipe.Draw(_spriteBatch);
+        </strong>
+        _spriteBatch.Draw(_texture, _groundPos1, _groundSrcRect, Color.White);
+        ...
+    }
+}
+</pre>
+
+<p>Do some effort and try to understand this code by yourself, because everything here is simple and a compilation of everything I shown previously.</p>
+
+<p>The only thing relevant to mention here is about the <code>_initialPipesPosition</code>: only the value of it's <code>X</code>-axis is relevant for us because we will position the pipe in the y dynamically and randomly.</p>
+
+<p>This is what we have now:</p>
+
+<video src="/assets/flappy_bird_course/videos/spawning_pipes_dinamically_over_time.mp4" autoplay muted loop></video>
+
+<p>What we need now is position the pipes randomly in the y-axis:</p>
+
+<p class="msg">🤔 <code>pipes count</code> is the amount of pipes currently being updated and drawn. Just to make sure that the pipes are begin correctly destroying.</p>
 
 <hr/>
+
+<h4 id="creating-pipes-at-random-y"><a href="{{page.url}}#creating-pipes-at-random-y">Creating Pipes at random Y</a></h4>
+
+<pre>
+public class Game1 : Game {
+    ...
+    private float _minPipeY = 130f;
+    private float _maxPipeY = 290f;
+    private MathHelper.Random _rng = new MathHelper.Random();
+    ...
+    private void CreatePipe()
+    {
+        <strong>var position = new Vector2(
+            _initialPipesPosition.X,
+            _rng.NextFloat(_minPipeY, _maxPipeY)
+        );</strong>
+        var pipe = new Pipe(_texture, position);
+        _pipes.Add(pipe);
+    }
+    ...
+}
+</pre>
+
+<p>Things should be obvious here. The only part relevant is about: why I'm using <a href="https://docs.monogame.net/api/Microsoft.Xna.Framework.MathHelper.Random.html" target="_blank" rel="noopener noreferrer">MathHelper.Random</a> instead of the default <a href="https://learn.microsoft.com/en-us/dotnet/api/system.random?view=net-10.0" target="_blank" rel="noopener noreferrer">System.Random</a>?</p>
+
+<p>Because this random number generator from MonoGame's <code>MathHelper</code> utility is more optimized for our games than the default one from C#'s namespaces.</p>
+
+<p>And about the <code>130</code> and <code>290</code> values in both <code>_minPipeY</code> and <code>_maxPipeY</code>, I just tested some values and I liked these, there's nothing special in them, you can for sure change both.</p>
+
+<p>Finally, if we test our game now:</p>
+
+<video src="/assets/flappy_bird_course/videos/generating_pipes_with_random_y.mp4" autoplay loop muted></video>
+
+<hr>
+
+<p>If you read so far <strong>thank yoooou so much</strong> 😍 for the effort.</p>
+
+<p>In the next chapter we will finally create the bird, read input from the keyboard, make the bird fall and jump and so on 🧡.</p>
+
+<p>See you soon 👋</p>
