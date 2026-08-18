@@ -23,7 +23,6 @@ createdAt: 15/08/2026
 <ol>
     <li><a href="{{ page.url }}#loading-the-texture">Loading the texture</a></li>
     <li><a href="{{ page.url }}#using-the-mgcb-editor">Using the MGCB Editor</a></li>
-    <li><a href="{{ page.url }}#using-the-new-code-first-content-builder">Using the new code-first Content Builder (MonoGame 3.8.5+ only)</a></li>
     <li><a href="{{ page.url }}#drawing-a-texture">Drawing a texture</a></li>
     <li><a href="{{ page.url }}#about-the-spritebatch-draw">About the SpriteBatch.Draw</a></li>
     <li><a href="{{ page.url }}#why-the-top-left-corner">Why the top-left corner?</a></li>
@@ -73,6 +72,8 @@ createdAt: 15/08/2026
 <p>The problem of this tool is that everytime you need to import an asset you need to open it, you cannot automate it
     and if you are a Linux user like me... MAUI sucks.</p>
 
+<p class="msg">🤟 Apparently the <strong>mgcb editor</strong> will be replaced in the future by a new <a href="https://docs.monogame.net/articles/getting_started/content_pipeline/content_builder_project.html?tabs=vs2022" target="_blank" rel="noopener noreferrer">content pipeline</a> or at least it'll gain a new competitor that will be potentially better.</p>
+
 <p>It is installed by default (until MonoGame 3.8.5 at least) and you can open it by opening a terminal in the root of
     your project and running <code>dotnet mgcb-editor Content/Content.mgcb</code></p>
 
@@ -109,101 +110,11 @@ createdAt: 15/08/2026
 
 <p>The <strong>New Folder</strong> option will indeed create a directory inside the <strong>Content</strong> folder of the project and also in the build of our project, which means that you will need to consider it when specifying the path of some asset.</p>
 
+<img src="/assets/flappy_bird_course/images/Screenshot_20260818_132339.png" alt="the state of my content.mgcb">
+
 <p>By the way, perhaps you'd found a <strong>Build</strong> button in the MGCB Editor, if you press it right now, the content pipeline will process all the files that you added and will produce some <code>.xnb</code> files.</p>
 
 <p>If you have ignored it, when you build your project, the content pipeline will be triggered to proccess your files automatically. Then, the only thing you need to ensure is that the file to be process exists and you saved your <code>.mgcb</code> file before closing the MGCB Editor.</p>
-
-<hr />
-
-<h4 id="using-the-new-code-first-content-builder"><a href="{{ page.url }}#using-the-new-code-first-content-builder">Using the new code-first Content Builder (MonoGame 3.8.5+ only)</a></h4>
-
-<p class="msg">😴 If you are short in time maybe you could prefer the previous approach because this one, despite don't being difficult to setup it may take some time (specially this lot of reading). I mean, even this topic being interesting (specially for the future) you can skip it for now.</p>
-
-<p>This is the new saviour that MonoGame's team is bringing for us, it is code only and it can be automated.</p>
-
-<p>Since it is still experimental it doesn't come with MonoGame yet, but set it up is simple.</p>
-
-<p>By the way, you can read a little more about the new content pipeline through these posts:</p>
-
-<ul>
-    <li><a href="https://monogame.net/blog/2025-11-06-MonoGame-Content-Builder/" target="_blank" rel="noopener noreferrer">MonoGame Content Builder | MonoGame Blog</a></li>
-    <li><a href="https://monogame.net/blog/2026-07-15-3.8.5-release-2026/#new-content-builder" target="_blank" rel="noopener noreferrer">3.8.5 Release | MonoGame Blog</a></li>
-</ul>
-
-<p>Because even for me it's a new to use this 🤩.</p>
-
-<p>Note that the way I'll do the things here can be questionable lol, I'm not sure about how much reliable is the setup I'll do here, but it works so... let's go 😉.</p> 
-
-<p class="msg">In any case, you can join the <a href="https://discord.gg/monogame" target="_blank" rel="noopener noreferrer">MonoGame's community</a> in discord and ask about the content pipeline there.</p> 
-
-<p>The new content builder runs (or should run) in a new project, so we need to instantiate one. The <code>mgcb</code> template is already a project with the new content builder set.</p>
-
-<p>Since I will have two or more related projects I decided to recreate (or move) the project that is (or will be) the implementation of the game (the core project) to a common directory:</p>
-
-<img src="/assets/flappy_bird_course/images/Screenshot_20260814_164643.png" alt="a root directory containing both core project and content builder project" />
-
-<div class="msg">
-<p>Since I use <a href="https://www.jetbrains.com/rider/" target="_blank" rel="noopener noreferrer">Jetbrains Rider</a> to work with C# mostly, I created an <strong>Empty Solution</strong> and added both projects into it.</p>
-
-<img src="/assets/flappy_bird_course/images/Screenshot_20260814_164910.png" alt="a solution in jetbrains rider with both core project and content builder project" />
-</div>
-
-<p>Ok, probably your project folder don't have the <strong>ContentBuilder</strong> directory so open a terminal (or cmd) in the root where your core project is located and run <code>dotnet new mgcb -o ContentBuilder</code>.</p>
-
-<p>The output should be something like this:</p>
-
-<img src="/assets/flappy_bird_course/images/Screenshot_20260814_165443.png" alt="the initial state of a mgcb template instantiated in the file explorer" />
-
-<p>Now, go to the <code>.csproj</code> of the core project and remove the reference to the old content pipeline:</p>
-
-<img src="/assets/flappy_bird_course/images/Screenshot_20260814_181511.png" alt="removing the content pipeline package reference from the core.csproj" />
-
-<p>The section about the new content builder setup in <a href="https://docs.monogame.net/articles/getting_started/content_pipeline/content_builder_project.html?tabs=vscode#2-remove-legacy-mgcb-references-from-your-csproj" target="_blank" rel="noopener noreferrer">MonoGame's documentation</a> also recommends that you "fixate" the version of the <code>MonoGame.Framework</code> as the same of the one in the <strong>ContentBuilder</strong> project:</p>
-
-<p><code>ContentBuilder.csproj</code>:</p>
-<img src="/assets/flappy_bird_course/images/Screenshot_20260814_182121.png" alt="the version of monogame's content pipeline and native packages in the contentbuilder.csproj" />
-
-<p><code>Core.csproj</code>:</p>
-
-<img src="/assets/flappy_bird_course/images/Screenshot_20260814_182233.png" alt="fixing the version of the monogame's framework package in the core.csproj" />
-
-<p>The <a href="https://docs.monogame.net/articles/getting_started/content_pipeline/content_builder_project.html?tabs=vscode#3-add-the-builder-import-task-to-the-game-project" target="_blank" rel="noopener noreferrer">documentation</a> also recommends that you add a <code>&#60;Import ... &#47;&#62;</code> to the <code>.csproj</code> of your core project, but since I will run the content builder manually and copy the output content into the build directory of my project I will skip this step.</p>
-
-<p>Look for the <code>Builder.cs</code> of the <strong>ContentBuilder</strong> project and set the <code>OutputDirectory</code> in the <a href="https://docs.monogame.net/api/MonoGame.Framework.Content.Pipeline.Builder.ContentBuilderParams.html" target="_blank" rel="noopener noreferrer">ContentBuilderParams</a>:</p>
-
-<pre>var contentCollectionArgs = new ContentBuilderParams()
-{
-    ...
-    OutputDirectory = "../Core",
-    ...
-};</pre>
-
-<p>The content builder already creates a directory named as <strong>Content</strong> in the output directory so you don't need to create one. By the way, do another thing, go into the root folder of the core project and remove the <strong>Content</strong> directory from there.</p>
-
-<p>Ok, let test this, just take that spritesheet and place it at the <strong>Assets</strong> directory.</p>
-
-<img src="/assets/flappy_bird_course/images/Screenshot_20260814_192832.png" alt="showing the structure inside my ContentBuilder project" />
-
-<p>Oh, and I almost forgot to mention: if you create some directory inside <strong>Assets</strong> (like a <strong>Graphics</strong> folder) it will also be copied to the output directory 😉.</p>
-
-<p>Open a terminal in the root of the <strong>ContentBuilder</strong> folder and run <code>dotnet run</code></p>
-
-<img src="/assets/flappy_bird_course/images/Screenshot_20260814_193244.png" alt="showing the log of the content builder in the terminal" />
-
-<p>If we look inside our core project:</p>
-
-<img src="/assets/flappy_bird_course/images/Screenshot_20260814_193445.png" alt="showing the log of the content builder in the terminal" />
-
-<p>Great, we need to do one last thing: copy the processed files into the build directory of our game.</p>
-
-<p>Just add this into the <code>.csproj</code> of your core project:</p>
-
-<pre>&#60;ItemGroup&#62;
-    &#60;Folder Include="Content" &#47;&#62;
-    &#60;Content Include="Content&#47;**" CopyToOutputDirectory="PreserveNewest" &#47;&#62;
-&#60;&#47;ItemGroup&#62;</pre>
-
-<p>The first line will show the <strong>Content</strong> folder in the <code>Solution Explorer</code> of <strong>Rider</strong> or <a href="https://visualstudio.microsoft.com/" target="_blank" rel="noopener noreferrer">Visual Studio</a> and the second is the one that will copy the <strong>Content</strong> folder and all it's content into the build directory.</p>
 
 <hr />
 
@@ -556,7 +467,7 @@ _spriteBatch.Draw(_texture, new Vector2(100f), null, Color.White, angle, origin,
 
 <video src="/assets/flappy_bird_course/videos/rotating.mp4" muted autoplay loop></video>
 
-<p>First: the angle is set in radians and yeah, the origin also influences the rotation.</p>
+<p>The angle is set in radians and yeah, the origin also influences the rotation.</p>
 
 <p>I don't will use the rotation parameter in this course, but after it, maybe you can do something interesting with it.</p>
 
@@ -700,3 +611,5 @@ public class Game1 : Game {
 <p>Well, anyway, if you read so far <strong>thank yoooou so much</strong> 😍 for the effort. I know, some parts here are incorrect, or are unecessary, or maybe confuse, but despite that I hope I managed to help you in something 🧡.</p>
 
 <p>In the next chapter we will draw the ground and also start to implement the pipes, see you soon 👋.</p>
+
+<p>Next chapter: <a href="/posts/flappy_bird_course/part3/">Drawing the Ground and Implementing the Pipes (Part 3)</a></p>

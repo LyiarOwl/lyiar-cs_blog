@@ -85,3 +85,7 @@ img, video {
   left: 0;
   top: 0;
 }
+
+img, video {
+  outline: 3px solid mediumslateblue;
+}
