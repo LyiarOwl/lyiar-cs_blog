@@ -1,0 +1,737 @@
+---
+layout: layout.njk
+title: Implementing the Bird
+createdAt: 24/08/2026
+---
+
+<h2>{{ title }}</h2>
+
+<p>Hello! 👻</p>
+
+<p>In this chapter we will draw the bird, read input from the keyboard, apply gravity, make it jump and also handle collisions.</p>
+
+<p>Demo of this chapter done:</p>
+
+<video src="/assets/flappy_bird_course/videos/adding_score.mp4" autoplay loop muted></video>
+
+<p>If you haven't read the previous chapter yet: <a href="/posts/flappy_bird_course/part3">Drawing the Ground and Implementing the Pipes (part 3)</a></p>
+
+<hr />
+
+<h4>Summary:</h4>
+<ul>
+    <li><a href="{{page.url}}#setting-up-bird-initial-state-and-drawing-it">Setting Up Bird's Initial State and Drawing It</a></li>
+    <li><a href="{{page.url}}#reading-input-from-keyboard">Reading Input From Keyboard</a></li>
+    <li><a href="{{page.url}}#making-the-bird-fall">Making the Bird Fall</a></li>
+    <li><a href="{{page.url}}#making-the-bird-jump">Making the Bird Jump</a></li>
+    <li><a href="{{page.url}}#collisions">Collisions</a></li>
+    <li><a href="{{page.url}}#collision-with-ground-and-pipes">Collision With Ground and Pipes</a></li>
+    <li><a href="{{page.url}}#reseting">Reseting</a></li>
+    <li><a href="{{page.url}}#scoring">Scoring</a></li>
+</ul>
+
+<hr />
+
+<h3 id="setting-up-bird-initial-state-and-drawing-it"><a href="{{page.url}}#setting-up-bird-initial-state-and-drawing-it">Setting Up Bird's Initial State and Drawing It</a></h3>
+
+<p>Lets begin by setting up some initial variables for our bird:</p>
+
+<pre>
+public class Bird
+{
+    private readonly Texture2D _texture;
+
+    private Rectangle _srcRect = new Rectangle(6, 982, 34, 24);
+
+    public Vector2 Position;
+
+    public Bird(Texture2D texture, Vector2 position)
+    {
+        _texture = texture;
+        Position = position;
+    }
+
+    public void Draw(SpriteBatch batch)
+    {
+        Vector2 origin = _srcRect.Size.ToVector2() / 2f;
+        batch.Draw(_texture, Position, _srcRect, Color.White, 0f, 
+            origin, 1f, SpriteEffects.None, 0f);
+    }
+}
+</pre>
+
+<p>The relevant part here is:</p>
+
+<p>I'm drawing the bird's sprite with it's anchor at the center, this is just for conveniece. With the origin at the center we just need to take care of where the bird's collider should be placed and not both, the collider and the sprite.</p>
+
+<p>Lets create an instance of it and draw:</p>
+
+<pre>
+public class Game1 : Game {
+    ...
+    private Vector2 _birdInitialPosition;
+    private Bird _bird;
+    ...
+    protected override void LoadContent() {
+        ...
+        _birdInitialPosition = new Vector2(
+            _graphics.PreferredBackBufferWidth / 2f,
+            _graphics.PreferredBackBufferHeight / 2f
+        );
+        _bird = new Bird(_texture, _birdInitialPosition);
+    }
+    ...
+    protected override void Draw(GameTime gameTime)
+    {
+        ...
+        _bird.Draw(_spriteBatch);
+
+        _spriteBatch.End();
+        ...
+    }
+    ...
+    protected override void Dispose(bool disposing)
+    {
+        _texture.Dispose();
+        _spriteBatch.Dispose();
+        base.Dispose(disposing);
+    }
+}
+</pre>
+
+<p>The <code>_birdInitialPosition</code> is where we will place our bird when we reset the game after a game over, for example.</p>
+
+<p>One thing that I forgot in the previous chapter was to liberate the resources that our game is consuming. You can do this by calling <code>Dispose</code> from both, our texture and the <strong>SpriteBatch</strong> inside the <code>Dispose</code> of the <code>Game1</code> class.</p>
+
+<p class="msg">😵‍💫 Actually, <code>Game1</code>'s <code>Dispose</code> is called when the application/game is closing, which means that freeing these resources at this stage is redundant because any leaked memory will be freed automatically. This project consist of one scene, but in a game with multiple scenes, and you expects that the player will keep the game active for hours, freeing resources will be really important (during the change of one scene to another, for example). So, even being redudant in this case, cultivating this habit now will be good.</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260819_184237.png" alt="drawing the bird">
+
+<hr>
+
+<h3 id="reading-input-from-keyboard"><a href="{{page.url}}#reading-input-from-keyboard">Reading Input From Keyboard</a></h3>
+
+<p>Read input from the keyboard in MonoGame is very simple actually:</p>
+
+<pre>
+public class Game1 : {
+    ...
+    protected override void Update(...) {
+        var keyboard = Keyboard.GetState();
+        if (keyboard.IsKeyDown(Keys.X))
+            Console.WriteLine("x is down");
+        
+        if (Keyboard.IsKeyUp(Keys.D))
+            Console.WriteLine("d is up");
+    }
+    ...
+}
+</pre>
+
+<p>You can get input from the mouse similarly:</p>
+
+<pre>
+protected override void Update(...) {
+    var mouse = Mouse.GetState();
+
+    if (mouse.LeftButton == ButtonState.Pressed) {
+        Console.WriteLine("lmb is down");
+    }
+
+    Console.WriteLine(mouse.Position);
+}
+</pre>
+
+<p>But I'll left the mouse for later.</p>
+
+<p><a href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Input.KeyboardState.html" target="_blank" rel="noopener noreferrer">Keyboard.GetState</a> will return a struct containing the current state of the keyboard. </p>
+
+<p>The state includes all keys being held and not. But there is some limitations like if you want to check if some key was pressed just the frame that you pressed the key, <code>KeyboardState</code> doesn't provide this.</p>
+
+<p>And we will need this. Probably there is many ways to solve this, but the most convenient is this:</p>
+
+<pre>
+public class Game1 : Game {
+    ...
+    private KeyboardState _prevKbState;
+    private KeyboardState _currentKbState;
+    ...
+    protected override void Update(...) {
+        _prevKbState = _currentKbState;
+        _currentKbState = Keyboard.GetState();
+        ...
+        if (IsKeyJustPressed(Keys.F))
+            Console.WriteLine("f was just pressed");
+        
+        if (IsKeyJustReleased(Keys.Space))
+            Console.WriteLine("space was just released");
+    }
+    ...
+    public bool IsKeyJustPressed(Keys key)
+    {
+        return _currentKbState.IsKeyDown(key) && _prevKbState.IsKeyUp(key);
+    }
+    public bool IsKeyJustReleased(Keys key)
+    {
+        return _currentKbState.IsKeyUp(key) && _prevKbState.IsKeyDown(key);
+    }
+    ...
+}
+</pre>
+
+<p>Why? because you can use this for absolutely any key and also you can replicate this pattern with <a href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Input.GamePadState.html" target="_blank" rel="noopener noreferrer">GamePadState</a> and <a href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Input.MouseState.html" target="_blank" rel="noopener noreferrer">MouseState</a>.</p>
+
+<p>Since <code>KeyboardState</code> is the <strong>current</strong> state of the keyboard (more specifically the state in the moment that <code>Keyboard.GetState</code> is called) we are just doing a little trick: saving the previous state of the keyboard and comparing it with the current/new state:</p>
+
+<pre>
+Frame    Previous    Current    JustPressed?
+-----    --------    -------    ------------
+0        false       false      false
+1        false       true       true   &lt;- pressed
+2        true        true       false  &lt;- held down
+3        true        false      false  &lt;- released
+</pre>
+
+<p class="msg">🤔 Notice that <strong>JustPressed</strong> is only true during the frame where the key changes from up to down. As soon as the key remains pressed, both states become equal and the condition stops being true. This is possible because <code>KeyboardState</code> is a <a href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/struct" target="_blank" rel="noopener noreferrer">struct</a> and structs are copy by value.</p>
+
+<p class="msg">💡 If you want to know more about the <strong>GamePad</strong>, <strong>Mouse</strong>, <strong>Keyboard</strong> and even <strong>Touch</strong> states and how to use them, look this MonoGame's guide: <a href="https://docs.monogame.net/articles/tutorials/building_2d_games/11_input_management/index.html" target="_blank" rel="noopener noreferrer">11: Input Management - MonoGame</a>.</p>
+
+<p>Just for convenience I created a wrapper over the keyboard state:</p>
+
+<pre>
+public static class KeyboardExtended
+{
+    private static KeyboardState _prevKbState;
+    private static KeyboardState _currKbState;
+
+    public static void Update()
+    {
+        _prevKbState = _currKbState;
+        _currKbState = Keyboard.GetState();
+    }
+
+    public static bool IsKeyDown(Keys key) => _currKbState.IsKeyDown(key);
+    public static bool IsKeyUp(Keys key) => _currKbState.IsKeyUp(key);
+    public static bool IsKeyJustPressed(Keys key) => IsKeyDown(key) && _prevKbState.IsKeyUp(key);
+    public static bool IsKeyJustReleased(Keys key) => IsKeyUp(key) && _prevKbState.IsKeyDown(key);
+}
+</pre>
+
+<pre>
+public class Game1 : Game {
+    ...
+    protected override void Update(...) {
+        KeyboardExtended.Update();
+        ...
+        if (KeyboardExtended.IsKeyJustPressed(Keys.F))
+            Console.WriteLine("f was just pressed");
+
+        if (KeyboardExtended.IsKeyJustReleased(Keys.Space))
+            Console.WriteLine("space was just released");
+        ...
+    }
+}
+</pre>
+
+<p>Nice, we can now apply gravity to the bird and make it jump.</p>
+
+<hr>
+
+<h3 id="making-the-bird-fall"><a href="{{page.url}}#making-the-bird-fall">Making the Bird Fall</a></h3>
+
+<p>We will need a second variable that I'll call as velocity, it will make our life easy for simulate acceleration:</p>
+
+<pre>
+public class Bird
+{
+    ...
+
+    public Vector2 Velocity;
+    public float Gravity = 0.1f;
+
+    ...
+
+    public void Update()
+    {
+        Velocity.Y += Gravity;
+
+        float groundY = 400f;
+        if (Position.Y + Velocity.Y >= groundY)
+        {
+            Velocity.Y = 0f;            
+            Position = new Vector2(Position.X, groundY);
+        }
+
+        Position += Velocity;
+    }
+
+    ...
+}
+</pre>
+
+<p>We are accumulating gravity in <code>Velocity.Y</code> and then adding the velocity to the position to simulate acceleration by gravity. If you add the gravity directly to the Y of the bird it will just move down linearly, with the same speed.</p>
+
+<p>The <code>if (...)</code> is checking if the bird exceeded some value in the y and if this is the case, we zero <code>Velocity.Y</code> and update the bird's y to this value. The value I'm using is simulating as if the bird had collided with the ground.</p>
+
+<p>Note that in the <code>new Vector2(Position.X, groundY)</code> I'm preserving the current <code>X</code> position of the bird. I don't want to move the bird horizontally, just vertically.</p>
+
+<p class="msg">⚠️ Of course, don't forget to call the bird's <code>Update</code> method somewhere inside the <code>Game1</code> class.</p>
+
+<p class="msg">💡 Change some values, test things, you learn a lot by messing around!</p>
+
+<video src="/assets/flappy_bird_course/videos/applying_gravity_to_the_bird.mp4" autoplay muted loop></video>
+
+<p class="msg">Yeah, this preview isn't very good, but probably you already saw the result.</p>
+
+<hr>
+
+<h3 id="making-the-bird-jump"><a href="{{page.url}}#making-the-bird-jump">Making the Bird Jump</a></h3>
+
+<p>To make it jump is very simple actually, we just need to set <code>Velocity.Y</code> in some moment, in this case, when some key from the keyboard is pressed:</p>
+
+<pre>
+public class Bird {
+    ...
+    public float Gravity = 0.25f; // changed
+    public float JumpImpulse = 4f;
+    ...
+    public void Update()
+    {
+        ...
+
+        if (KeyboardExtended.IsKeyJustPressed(Keys.Space))
+        {
+            Velocity.Y = -JumpImpulse;
+        }
+
+        Position += Velocity;
+    }
+}
+</pre>
+
+<video src="/assets/flappy_bird_course/videos/bird_is_jumping.mp4" autoplay muted loop></video>
+
+<hr>
+
+<h3 id="collisions"><a href="{{page.url}}#collisions">Collisions</a></h3>
+
+<p>Before we begin, let's do a small change in the <code>Game1</code> class to make the game begin only when space is pressed:</p>
+
+<pre>
+public class Game1 : Game
+{
+    ...
+    private bool _start;
+    ...
+    protected override void Update(GameTime gameTime)
+    {
+        ...
+
+        if (KeyboardExtended.IsKeyJustPressed(Keys.Space) && !_start)
+        {
+            _start = true;
+        }
+        
+        if (_start)
+        {
+            ScrollBackground();
+            ScrollGround();
+
+            HandlePipesSpawning(gameTime);
+            ScrollPipes();
+            DestroyPipesOutsideScreen();
+                
+            _bird.Update();
+        }
+        
+        base.Update(gameTime);
+    }
+}
+</pre>
+
+<p>The order matters here, this snippet:</p>
+
+<pre>
+if (KeyboardExtended.IsKeyJustPressed(Keys.Space) && !_start)
+{
+    _start = true;
+}
+</pre>
+
+<p>running before <code>if (start) {...}</code> will make that when you press space the game begins and the bird jump right after.</p>
+
+<p>Ok, we need to setup the collider for both: pipes and bird.</p>
+
+<p>Before this, let's create create a clipping rectangle to draw this part of the texture:</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260820_185411.png" alt="showing part of the texture that i'll use to draw bounding boxes">
+
+<p>You can take any part of this sprite, even:</p>
+
+<pre>
+Rectangle clipRect = new Rectangle(585, 449, 1, 1);
+</pre>
+
+<p>a part of 1x1px because we will scale it using the destination rectangle parameter (as I already showed in the <a href="/posts/flappy_bird_course/part2#rescaling">part 2</a>).</p>
+
+<p>We will use this part of the texture to draw our colliders, just to make sure that their size and position are correct.</p>
+
+<pre>
+public class Bird
+{
+    ...
+    public Rectangle Collider = new Rectangle(0, 0, 18, 18);
+    ...
+    public void Update()
+    {
+        ...
+
+        Position += Velocity;
+        
+        Collider.Location = Position.ToPoint() - Collider.Size / 2;
+    }
+    public void Draw(SpriteBatch batch, <strong>Rectangle pixelSrcRect</strong>)
+    {
+        ...
+        batch.Draw(_texture, Collider, pixelSrcRect, Color.HotPink * 0.5f);
+    }
+}
+</pre>
+
+<p>I'm defining the position of the bird's collider to the same position as the sprite after updating the sprite's position. For this game, the order isn't relevant, but for a game that will handle physics collision the order matters.</p>
+
+<pre>
+public class Pipe
+{
+    ...
+    public Rectangle TopPipeCollider = new Rectangle(0, 0, 52, 320);
+    public Rectangle BottomPipeCollider = new Rectangle(0, 0, 52, 320);
+
+    public Vector2 Position
+    {
+        get => _position;
+        set
+        {
+            ...
+            TopPipeCollider.Location = TopPipePosition.ToPoint();
+            BottomPipeCollider.Location = BottomPipePosition.ToPoint();
+            
+            _position = value;
+        }
+    }
+    ...
+    public void Draw(SpriteBatch batch, <strong>Rectangle pixelSrcRect</strong>)
+    {
+        ...
+        batch.Draw(_texture, TopPipeCollider, pixelSrcRect, Color.Red * 0.5f);
+        batch.Draw(_texture, BottomPipeCollider, pixelSrcRect, Color.Red * 0.5f);
+    }
+}
+</pre>
+
+<p>And of course, you need to pass the clipping rectangle of the white sprite to the respective methods:</p>
+
+<pre>
+public class Game1 : Game {
+    ...
+    <strong>private Rectangle _pixelSrcRect = new Rectangle(585, 449, 16, 16);</strong>
+    ...
+    protected override void Draw(GameTime gameTime)
+    {
+        ...
+        foreach (var pipe in _pipes)
+            pipe.Draw(_spriteBatch, <strong>_pixelSrcRect</strong>);
+        ...
+        _bird.Draw(_spriteBatch, <strong>_pixelSrcRect</strong>);
+        ...
+    }
+    ...
+}
+</pre>
+
+<p>When the game begin, the collider of the bird will be positioned incorrectly, but this isn't a problem because it will be updated to the correct position when the game start:</p>
+
+<video src="/assets/flappy_bird_course/videos/drawing_the_objects_bounding_boxes.mp4" autoplay muted loop></video>
+
+<hr>
+
+<h4 id="collision-with-ground-and-pipes"><a href="{{page.url}}#collision-with-ground-and-pipes">Collision With Ground and Pipes</a></h4>
+
+<p>What we will do is simply detect if the bird's collider is intersecting with any pipe or deliberately you make it fell to the floor. If any of these are the case then we should stop the level scrolling and disable the bird's ability of jump.</p>
+
+<p>My approach to solving this was passing the list of pipes to the bird's <code>Update</code> method and checking collision from there and expose some actions to perform something from the <code>Game1</code> class:</p>
+
+<pre>
+public class Bird
+{
+    ...
+    <strong>public event Action IsCollidingWithFloor;
+    public event Action IsCollidingWithPipes;
+    private bool _isCollidingWithPipe;</strong>
+    ...
+    public void Update(<strong>List&lt;Pipe&gt; pipes</strong>)
+    {
+        ...
+        // colliding with the ground
+        if (Position.Y + Velocity.Y >= groundY)
+        {
+            ...
+            <strong>IsCollidingWithFloor?.Invoke();</strong>
+        }
+
+        // colliding with the pipes
+        <strong>foreach (var pipe in pipes)
+        {
+            if (Collider.Intersects(pipe.BottomPipeCollider) || Collider.Intersects(pipe.TopPipeCollider))
+            {
+                _isCollidingWithPipe = true;
+                IsCollidingWithPipes?.Invoke();
+            }
+        }</strong>
+
+        <strong>if (!_isCollidingWithPipe)
+        {</strong>
+            if (KeyboardExtended.IsKeyJustPressed(Keys.Space))
+            {
+                Velocity.Y = -JumpImpulse;
+            }
+        <strong>}</strong>
+        ...
+    }
+    ...
+}
+</pre>
+
+<p>My idea is: if the bird hit the floor we can consider this as game over immediately (and show the game over text).</p>
+
+<p>But if the bird hit some pipe, before consider as gameover we need to stop scrolling the ground, background and pipes, let the bird fall and when it reaches the floor, game over should become true:</p>
+
+<pre>
+public class Game1 : Game {
+    ...
+    <strong>private bool _start;
+    private bool _gameOver;
+    private bool _scroll;</strong>
+    ...
+    protected override void LoadContent()
+    {
+        ...
+        _bird = new Bird(_texture, _birdInitialPosition);
+        <strong>_bird.IsCollidingWithFloor += () =>
+        {
+            _gameOver = true;
+            _scroll = false;
+            Console.WriteLine("game over");
+        };
+        _bird.IsCollidingWithPipes += () => { _scroll = false; };</strong>
+    }
+    ...
+    protected override void Update(GameTime gameTime)
+    {
+        ...
+        if (KeyboardExtended.IsKeyJustPressed(Keys.Space) && !_start)
+        {
+            _start = true;
+            <strong>_scroll = true;</strong>
+        }
+
+        if (_start)
+        {
+            <strong>if (_scroll)
+            {
+                ScrollBackground();
+                ScrollGround();
+
+                HandlePipesSpawning(gameTime);
+                ScrollPipes();
+                DestroyPipesOutsideScreen();
+            }</strong>
+
+            <strong>if (!_gameOver)
+                _bird.Update(_pipes);</strong>
+        }
+        ...
+    }
+}
+</pre>
+
+<video src="/assets/flappy_bird_course/videos/collision_testing.mp4" autoplay muted loop></video>
+
+<hr>
+
+<h3 id="reseting"><a href="{{page.url}}#reseting">Reseting</a></h3>
+
+<p>Now we need to reset our game by removing the pipes created during the game and reseting the bird's position:</p>
+
+<pre>
+public class Bird {
+    ...
+    public void Reset()
+    {
+        Velocity = Vector2.Zero;
+        _isCollidingWithPipe = false;
+    }
+}
+</pre>
+
+<pre>
+public class Game1 : Game {
+    ...
+    protected override void Update(GameTime gameTime)
+    {
+        ...
+        if (_start)
+        {
+            ...
+            if (!_gameOver)
+                _bird.Update(_pipes);
+
+            <strong>if (_gameOver)
+            {
+                if (KeyboardExtended.IsKeyJustPressed(Keys.Space)) 
+                    Reset();
+            }</strong>
+        }
+        ...
+    }
+    ...
+    private void Reset()
+    {
+        _bird.Reset();
+        _bird.Position = _birdInitialPosition;
+
+        _pipes.Clear();
+        _scroll = false;
+        _start = false;
+        _gameOver = false;
+        _pipesSpawnElapsed = 0f;
+    }
+}
+</pre>
+
+<p>Realize that the code snippet that resets our game is placed <strong>after</strong> the part that updates the bird, this is necessary to avoid that right after pressing space to reset the game it begans immeditely.</p>
+
+<hr>
+
+<h3 id="scoring"><a href="{{page.url}}#scoring">Scoring</a></h3>
+
+<p>To end this chapter what we need is score when the bird pass through the pipes.</p>
+
+<p>We need a second collider to detect when the bird pass through the pipes:</p>
+
+<pre>
+public class Pipe {
+    ...
+    public Rectangle ScoringCollider = new Rectangle(0, 0, 10, 80);
+    public Vector2 Position
+    {
+        ...
+        set
+        {
+            ...
+            ScoringCollider.Location = value.ToPoint() - ScoringCollider.Size / 2;
+            ...
+        }
+    }
+    ...
+    public void Draw(SpriteBatch batch, Rectangle pixelSrcRect)
+    {
+        ...
+        batch.Draw(_texture, ScoringCollider, pixelSrcRect, Color.Blue * 0.5f);
+    }
+}
+</pre>
+
+<p>Now we need to handle when the bird pass over the scoring collider, I decided to trigger another action when that happens, but we need to ensure that it only runs once after entering the collider:</p>
+
+<pre>
+public class Bird {
+    ...
+    public event Action Scoring;
+    private bool _enteredScoringCollider;
+    ...
+    public void Update(List<Pipe> pipes)
+    {
+        ...
+
+        HandleGroundCollision();
+        HandlePipesCollisions(pipes);       
+
+        if (!_isCollidingWithPipe)
+        {
+            if (KeyboardExtended.IsKeyJustPressed(Keys.Space))
+            {
+                Velocity.Y = -JumpImpulse;
+            }
+
+            <strong>bool isInsideCollider = false;
+            foreach (var pipe in pipes)
+            {
+                if (Collider.Intersects(pipe.ScoringCollider))
+                {
+                    isInsideCollider = true;
+                    break;
+                }
+            }
+
+            if (isInsideCollider && !_enteredScoringCollider)
+            {
+                _enteredScoringCollider = true;
+                Scoring?.Invoke();
+            }
+            else if (!isInsideCollider)
+            {
+                _enteredScoringCollider = false;
+            }</strong>
+        }
+        ...
+    }
+    ...
+    public void Reset()
+    {
+        ...
+        <strong>_enteredScoringCollider = false;</strong>
+    }
+}
+</pre>
+
+<p>Now we just need to add a callback to this <code>Scoring</code> event:</p>
+
+<p class="msg">By the way, I also moved the snippets that handle the collisions with ground and pipes to individual methods.</p>
+
+<pre>
+public class Game1 : Game {
+    ...
+    protected override void LoadContent()
+    {
+        ...
+        _bird = new Bird(_texture, _birdInitialPosition);
+        ...
+        _bird.Scoring += () => _score++;
+    }
+    ...
+    private void Reset()
+    {
+        ...
+        _score = 0;
+    }
+}
+</pre>
+
+<p>Nice, add a <code>Console.WriteLine(_score)</code> inside the <code>Update</code> method of <strong>Game1</strong>. We will use this to make sure that the score is being increased just a few times:</p>
+
+<video src="/assets/flappy_bird_course/videos/adding_score.mp4" autoplay muted loop></video>
+
+<hr>
+
+<p>If you read so far <strong>thank yoooou so much</strong> 😍 for the effort, we are almost done with this course 🙌.</p>
+
+<p>I'm sorry if I forgot something, despite this project being very small to develop, writing about it is taking many hours of my day, lol, so for sure I ended up leaving some information out u.u</p>
+
+<p>In any case you can enter in <a href="/aboutme">contact</a> with me about these posts.</p>
+
+<p>In the next (and probably last) chapter we will draw some texts in the screen and play some sound 🧡.</p>
+
+<p>See you soon 👋</p>
+
+
