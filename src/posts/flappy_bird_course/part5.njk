@@ -1,0 +1,458 @@
+---
+layout: layout.njk
+title: Adding the UI And Sounds
+createdAt: 29/08/2026
+---
+
+<h2>{{ title }}</h2>
+
+<p>Hello! 😉</p>
+
+<p>In this (and probably last) chapter we'll draw the player's score, the game's logo, a play button and also play a
+    sound effects.</p>
+
+<p>Demo of this chapter done:</p>
+
+<video src="/assets/flappy_bird_course/videos/flappy_bird_course_demo.mp4" autoplay loop muted controls></video>
+
+<p class="msg">🔊 Unmuted to hear the sound effects.</p>
+
+<p>If you haven't read the previous chapter yet: <a href="/posts/flappy_bird_course/part4">Implementing the Bird (part
+        4)</a></p>
+
+<hr />
+
+<h4>Summary:</h4>
+<ul>
+    <li><a href="{{page.url}}#loading-the-spritefont">Loading the SpriteFont</a></li>
+    <li><a href="{{page.url}}#drawing-the-game-score">Drawing the Game Score</a></li>
+    <li><a href="{{page.url}}#drawing-play-button-logo-and-gameover-label">Drawing Play Button, Logo and the "Game Over" Label</a></li>
+    <li><a href="{{page.url}}#importing-loading-and-unloading-sound-effects">Importing, Loading and Unloading the Sound Effects</a></li>
+    <li><a href="{{page.url}}#createinstance">CreateInstance?</a></li>
+    <li><a href="{{page.url}}#playing-the-sound-effects">Playing the Sound Effects</a></li>
+</ul>
+
+<hr />
+
+<h3 id="loading-the-spritefont"><a href="{{page.url}}#loading-the-spritefont">Loading the SpriteFont</a></h3>
+
+<p>I'll use this font to draw the game score:</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260825_145537.png" alt="preview of the font bit5x3">
+
+<p class="msg">💡 You can download this font in the <a href="https://github.com/LyiarOwl/FlappyBird-Course/blob/main/Content/bit5x3.ttf" target="_blank" rel="noopener noreferrer">GitHub
+        repository</a> of this project.</p>
+
+<p class="msg">🤔 We could map those numbers in the spritesheet, but for this course I'll use the most simple approach.
+</p>
+
+<p>You will need to do two things in the <strong>MGCB Editor</strong>:</p>
+<ul>
+    <li>Create a <strong>SpriteFont Description (.spritefont)</strong></li>
+    <li>Import/copy the <strong>Bit5x3</strong> font to the same place as the <strong>.spritefont</strong></li>
+</ul>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260825_151502.png"
+    alt="showing how to create a new asset with the MGCB Editor">
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260825_152104.png"
+    alt="creating a spritefont named as GameFont">
+
+<p>After creating the <strong>.spritefonte</strong> import the font like you did with textures but before saving, select
+    your font, go to <strong>Properties</strong> panel and set the <strong>Build Action</strong> to
+    <strong>Copy</strong>:</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260825_152448.png"
+    alt="importing the font and changing the build action">
+
+<p class="msg">💡 Actually, you could create just a <strong>.spritefont</strong> and copy manually your font to the
+    <strong>Content</strong> directory directly, but I decided to copy it to the build directory using the build action
+    for convenience.</p>
+
+<p>You can save now, if you press build right now, depending on the platform you're working a build exception will be
+    thrown, that is OK.</p>
+
+<p>In any case, just save and close the <strong>MGCB Editor</strong> without building.</p>
+
+<p>Open the <strong>.spritefont</strong> that you created and look for the tags <code>&lt;FontName&gt;</code> and
+    <code>&lt;Size&gt;</code> and change both:</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260825_153243.png"
+    alt="importing the font and changing the build action">
+
+<p>You don't need to include the file extension and the value in <code>&lt;FontName&gt;</code> must match with the exact
+    name of the font file.</p>
+
+<p>Now if you build your project, everything should work.</p>
+
+<p>Ok, now we can load our font in the same way as we did with our texture:</p>
+
+<pre>
+public class Game1 : Game {
+    ...
+    private SpriteFont _gameFont;
+    ...
+    protected override void LoadContent() {
+        ...
+        _gameFont = Content.Load<SpriteFont>("GameFont");
+    }
+    ...
+    protected override void Dispose() {
+        ...
+        _gameFont.Texture.Dispose();
+        ...
+    }
+}
+</pre>
+
+<hr>
+
+<h3 id="drawing-the-game-score"><a href="{{page.url}}#drawing-the-game-score">Drawing the Game Score</a></h3>
+
+<p>We will use the <a
+        href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Graphics.SpriteBatch.html#Microsoft_Xna_Framework_Graphics_SpriteBatch_DrawString_Microsoft_Xna_Framework_Graphics_SpriteFont_System_String_Microsoft_Xna_Framework_Vector2_Microsoft_Xna_Framework_Color_"
+        target="_blank" rel="noopener noreferrer">DrawString</a> of the <code>SpriteBatch</code> to draw our score
+    label. It works exactly like the other overloads of the <code>Draw</code> method, except that it expects a
+    <strong>SpriteFont</strong> instead of a <strong>Texture2D</strong>:</p>
+
+<pre>
+protected override void Draw(GameTime gameTime)
+{
+    ...
+    
+    _spriteBatch.DrawString(_gameFont, _score.ToString(), new Vector2(10f), Color.White);
+
+    _spriteBatch.End();
+
+    ...
+}
+</pre>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260826_133230.png" alt="drawing the score">
+
+<p>Nice, but unless you want the score positioned at the top left corner of the screen, we need to align it to the
+    center horizontally:</p>
+
+<pre>
+Vector2 center = new Vector2(
+    _graphics.PreferredBackBufferWidth, 
+    _graphics.PreferredBackBufferHeight) / 2f;
+
+_spriteBatch.DrawString(_gameFont, _score.ToString(), <strong>new Vector2(center.X, 10f)</strong>, Color.White);
+</pre>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260826_133615.png"
+    alt="aligning the score text in the center of the screen">
+
+<p>The score is at the center, but not perfectly aligned.</p>
+
+<p>To solve this we need to align the text itself to its own center. We can do this in two ways: by applying an offset the it directly or set it's drawing origin to the center.</p>
+
+<p>Regardless of what you choose, we need somehow get the size that our text drawing have and for this we can use the <a
+        href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Graphics.SpriteFont.html#Microsoft_Xna_Framework_Graphics_SpriteFont_MeasureString_System_String_"
+        target="_blank" rel="noopener noreferrer">MeasureString</a> method from our <strong>SpriteFont</strong>.</p>
+
+<pre>
+Vector2 center = new Vector2(
+    _graphics.PreferredBackBufferWidth, 
+    _graphics.PreferredBackBufferHeight) / 2f;
+<strong>Vector2 size = _gameFont.MeasureString(_score.ToString());
+Vector2 origin = new Vector2(size.X / 2f, 0f);</strong>
+
+_spriteBatch.DrawString(_gameFont, _score.ToString(), new Vector2(center.X, 10f), Color.White, 0f, <strong>origin</strong>, 1f, SpriteEffects.None, 0f);
+</pre>
+
+<p>If you run the game now, the score text should be (almost) perfectly aligned to the center of the screen.</p>
+
+<p>Lets do one last thing (just for style):</p>
+
+<pre>
+...
+Vector2 origin = new Vector2(...);
+
+_spriteBatch.DrawString(_gameFont, _score.ToString(), <strong>new Vector2(centerX, 12f), Color.Black * 0.5f</strong>, 0f, origin, 1f, SpriteEffects.None, 0f);
+
+_spriteBatch.DrawString(...);
+...
+</pre>
+
+<video src="/assets/flappy_bird_course/videos/properly_drawing_the_score.mp4" autoplay muted loop></video>
+
+<p class="msg">💡 I duplicated the <code>DrawString()</code> snippet that is drawing our white text, changed it's color to black, make it half transparent and applied a small offset to down.</p>
+
+<div class="msg">
+    <p>💡 By the way, you can comment (or remove) all those lines that we were using to draw our objects colliders:</p>
+    <pre>
+// bird
+batch.Draw(_texture, Collider, pixelSrcRect, Color.HotPink * 0.5f);
+
+// pipes
+batch.Draw(_texture, TopPipeCollider, pixelSrcRect, Color.Red * 0.5f);
+batch.Draw(_texture, BottomPipeCollider, pixelSrcRect, Color.Red * 0.5f);
+batch.Draw(_texture, ScoringCollider, pixelSrcRect, Color.Blue * 0.5f);
+</pre>
+</div>
+
+<hr>
+
+<h3 id="drawing-play-button-logo-and-gameover-label"><a href="{{page.url}}#drawing-play-button-logo-and-gameover-label">Drawing Play Button, Logo and the "Game Over" Label</a></h3>
+
+<p>What we need now is to draw these parts of our spritesheet:</p>
+
+<img src="/assets/flappy_bird_course/images/2026-08-27_16-00.png"
+    alt="showing the parts of the spritesheet that should be drawn">
+
+<p>In specific moments:</p>
+<ul>
+    <li>The Play button and the game's logo should be drawn at the begin of the game (when <code>_start</code> is
+        false).</li>
+    <li>The "Game Over" label should be drawn when the game ends (when <code>_gameOver</code> is true).</li>
+</ul>
+
+<pre>
+public class Game1 : Game {
+    ...
+    private Rectangle _flappyBirdLogo = new Rectangle(702, 182, 178, 48);
+    private Rectangle _playBtn = new Rectangle(706, 236, 108, 66);
+    private Rectangle _gameOverLabel = new Rectangle(786, 118, 200, 52);
+    ...
+    protected override void Draw(...) {
+        ...
+        Vector2 center = new Vector2(_graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight) / 2f;
+        ...
+        if (!_start)
+        {
+            _spriteBatch.Draw(_texture, 
+                center + new Vector2(-(_flappyBirdLogo.Width / 2f), -150f),
+                _flappyBirdLogo,
+                Color.White);
+            
+            _spriteBatch.Draw(_texture, 
+                center + new Vector2(-(_playBtn.Width / 2f), 100f),
+                _playBtn,
+                Color.White);
+        }
+
+        if (_gameOver)
+        {
+            _spriteBatch.Draw(_texture,
+                center - _gameOverLabel.Size.ToVector2() / 2,
+                _gameOverLabel,
+                Color.White);
+        }
+        
+        _spriteBatch.End();
+        ...
+    }
+    ...
+}
+</pre>
+
+<p class="msg">I preferred to center these sprites through it's position, but you can use the origin also.</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot from 2026-08-27 16-04-40.png" alt="drawing the labels">
+
+
+<hr>
+
+<h3 id="importing-loading-and-unloading-sound-effects"><a href="{{page.url}}#importing-loading-and-unloading-sound-effects">Importing, Loading and Unloading the Sound Effects</a></h3>
+
+<p>The last thing we need to finish this course is add sound for: scoring, jump and game over.</p>
+
+<p>You can download the sound effects that I'll use from "The Sound Resources" page: <a
+        href="https://sounds.spriters-resource.com/mobile/flappybird/asset/398837/" target="_blank"
+        rel="noopener noreferrer">Flappy Bird Sound Effects</a>.</p>
+
+<p>Or from the <a href="https://github.com/LyiarOwl/FlappyBird-Course/tree/main/Content/Sounds" target="_blank" rel="noopener noreferrer">repository</a> of this project, both will give the same sounds.</p>
+
+<p>Load the sound effects in your project like you did with the font and the texture:</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot from 2026-08-27 16-18-50.png" alt="importing the sound effects">
+
+<p>Make sure that <strong>Sound Effect - MonoGame</strong> is set as <strong>Processor</strong>. If you audio format is
+    <strong>.wav</strong>, then <strong>Sound Effect</strong> will be set as default, but if it is
+    <strong>.mp3</strong>, then the default processor will be <strong>Song</strong>. If this is the case, change it
+    manually to <strong>Sound Effect</strong>.</p>
+
+<p>Lets load and unload the sound effects:</p>
+
+<pre>
+public class Game1 : Game {
+    ...
+    private SoundEffect _dieSfx;
+    private SoundEffect _hitSfx;
+    private SoundEffect _pointSfx;
+    private SoundEffect _wingSfx;
+
+    private SoundEffectInstance _dieSfxInst;
+    private SoundEffectInstance _hitSfxInst;
+    private SoundEffectInstance _pointSfxInst;
+    private SoundEffectInstance _wingSfxInst;
+    ...
+    protected override void LoadContent() {
+        ...
+        _dieSfx = Content.Load&lt;SoundEffect&gt;("Sounds/sfx_die");
+        _hitSfx = Content.Load&lt;SoundEffect&gt;("Sounds/sfx_hit");
+        _pointSfx = Content.Load&lt;SoundEffect&gt;("Sounds/sfx_point");
+        _wingSfx = Content.Load&lt;SoundEffect&gt;("Sounds/sfx_wing");
+
+        _dieSfxInst = _dieSfx.CreateInstance();
+        _hitSfxInst = _hitSfx.CreateInstance();
+        _pointSfxInst = _pointSfx.CreateInstance();
+        _wingSfxInst = _wingSfx.CreateInstance();
+    }
+    ...
+    protected override void Dispose() {
+        ...
+        _dieSfx.Dispose();
+        _hitSfx.Dispose();
+        _pointSfx.Dispose();
+        _wingSfx.Dispose();
+        ...
+    }
+}
+</pre>
+
+<hr>
+
+<h4 id="createinstance"><a href="{{page.url}}#createinstance">CreateInstance?</a></h4>
+
+<p>I'm not sure about the details (read the disclaimer I put in the <a href="/posts/" target="_blank" rel="noopener noreferrer">Posts</a> page) but apparently when you load a sound effect in your MonoGame project, the data is loaded into the memory but you cannot use it directly. You need some sort of "controller" to configure or even play your sound effect.</p>
+
+<p>When you call <code>Play</code> from the <a href="https://docs.monogame.net/api/Microsoft.Xna.Framework.Audio.SoundEffect.html#Microsoft_Xna_Framework_Audio_SoundEffect_Play" target="_blank" rel="noopener noreferrer">SoundEffect</a> an instance (the controller) is temporarely created internally, it is used and them discarded. We can't do anything else than "play" this temporary instance.</p>
+
+<p class="msg">🤫 Some of the overloads accepts some changes like pitch and volume, but depending on your demands having just this isn't enough.</p>
+
+<p>I mean, would be interesting with we could take control of that instance. That is the reason why we use the <code>CreateInstance</code> method.</p>
+
+<p>Through it we can control pitch, volume, play, stop and so on.</p>
+
+<p>A thing to note is that when you call the <code>Play</code> method of <strong>SoundEffect</strong> directly you'll have the same audio playing multiple times at the same time, this is due that for each <code>Play</code> you call, you have one temporary instance being created and used.</p>
+
+<p>In the other hand, when you call multiple times the <code>Play</code> method from a <strong>SoundEffectInstance</strong>, in most of the cases, you will have just one audio (a single instance) being played. Calling <code>Play</code> multiple times don't will restart or overlaps the same audio if it is already playing.</p>
+
+<p class="msg">🤔 <em>"In most cases"</em> is because, apparently, depending on the platform that your game will run this behaviour isn't ensured, but <strong>I think</strong> that for most of the cases, it will work as that.</p>
+
+<p>You can have more precise informations about how audio works in MonoGame through <strong>MonoGame's documentation</strong>:</p>
+
+<ul>
+    <li><a href="http://https://docs.monogame.net/api/Microsoft.Xna.Framework.Audio.SoundEffect.html" target="_blank" rel="noopener noreferrer">Class SoundEffect - MonoGame</a></li>
+    <li><a href="https://docs.monogame.net/articles/tutorials/building_2d_games/14_soundeffects_and_music/index.html" target="_blank" rel="noopener noreferrer">Chapter 14: SoundEffects and Music - MonoGame</a></li>
+</ul>
+
+<p>Or even asking directly into <a href="http://" target="_blank" rel="noopener noreferrer">MonoGame's discord server</a>.</p>
+
+<hr>
+
+<h4 id="playing-the-sound-effects"><a href="{{page.url}}#playing-the-sound-effects">Playing the Sound Effects</a></h4>
+
+<p>Before this, we need to do one change and one addition in the Bird class:</p>
+<ul>
+    <li>Add/Expose an action that is triggered when the bird jumps.</li>
+    <li>Fix a "bug" that the <code>IsCollidingWithPipes</code> is being triggered multiple times.</li>
+</ul>
+
+<pre>
+public class Bird {
+    ...
+    <strong>public event Action Jumping;</strong>
+    ...
+    public void Update(...) 
+    {
+        ...
+        if (!_isCollidingWithPipe)
+        {
+            if (KeyboardExtended.IsKeyJustPressed(Keys.Space))
+            {
+                Velocity.Y = -JumpImpulse;
+                <strong>Jumping?.Invoke();</strong>
+            }
+            ...
+        }
+        ...
+    }
+    ...
+    private void HandlePipesCollisions(List<Pipe> pipes)
+    {
+        foreach (var pipe in pipes)
+        {
+            if (Collider.Intersects(pipe.BottomPipeCollider) || Collider.Intersects(pipe.TopPipeCollider))
+            {
+                <strong>if (!_isCollidingWithPipe)
+                    IsCollidingWithPipes?.Invoke();</strong>
+                _isCollidingWithPipe = true;
+            }
+        }
+    }
+    ...
+}
+</pre>
+
+<p>Finally, in our <code>Game1</code> class we just need to attach a callback to each action that our bird exposes:</p>
+
+<pre>
+public class Game1 : Game {
+    ...
+    private bool _collidedWithPipe;
+    ...
+    protected override void LoadContent() {
+        ...
+        _bird.Jumping += () =>
+        {
+            _wingSfxInst.Stop();
+            _wingSfxInst.Play();
+        };
+        _bird.IsCollidingWithFloor += () =>
+        {
+            if (!_collidedWithPipe)
+            {
+                _hitSfxInst.Stop();
+                _hitSfxInst.Play();
+            }
+        };
+        _bird.IsCollidingWithPipes += () =>
+        {
+            _dieSfxInst.Stop();
+            _dieSfxInst.Play();
+            
+            _hitSfxInst.Stop();
+            _hitSfxInst.Play();
+            _collidedWithPipe = true;
+        };
+        _bird.Scoring += () =>
+        {
+            _pointSfxInst.Stop();
+            _pointSfxInst.Play();
+        };
+    }
+    ...
+    public void Reset() {
+        ...
+        _collidedWithPipe = false;
+    }
+    ...
+}
+</pre>
+
+<p>Calling <code>Stop</code> before <code>Play</code> is to restart the audio in case of it is already playing.</p>
+
+<p>The <code>_collideWithPipe</code> is to avoid that the hit sound effect play twice, when you hit the pipe and the
+    floor one after another.</p>
+
+<video src="/assets/flappy_bird_course/videos/flappy_bird_course_demo.mp4" autoplay loop muted controls></video>
+
+<p class="msg">🔊 Unmuted to hear the sound effects.</p>
+
+<hr>
+
+<p>And, this is the end of this course 🎉</p>
+
+<p>Congratulations and <strong>thank you so much if you stayed with me so far</strong>.<p></p>
+
+<p>Some informations I passed was probably imprecise or maybe I missed something. I spent some consecutive days and hours writing these posts, testing some things and also learning through the way (after all I'm still a hobbyist just like you... no?).</p>
+
+<p>I hope something in any of these 5 posts has been helpful for you.</p> 
+
+<p>This is the last chapter, but not the last course.</p>
+
+<p>See you soon in (probably) the <strong>Tetris Course</strong>.</p>

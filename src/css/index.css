@@ -87,5 +87,8 @@ img, video {
 }
 
 img, video {
-  outline: 3px solid mediumslateblue;
+  display: block;
+  outline: 2px solid mediumslateblue;
+  border-radius: .5rem;
+  margin-block: 1rem;
 }

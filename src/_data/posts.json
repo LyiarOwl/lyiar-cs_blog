@@ -18,5 +18,9 @@
     {
         "title": "Flappy Bird Course - Implementing the Bird (part 4)",
         "path": "/posts/flappy_bird_course/part4"
+    },
+    {
+        "title": "Flappy Bird Course - Adding the UI And Sounds (part 5 - finale)",
+        "path": "/posts/flappy_bird_course/part5"
     }
 ]
