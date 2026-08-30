@@ -28,6 +28,7 @@ createdAt: 24/08/2026
     <li><a href="{{page.url}}#collision-with-ground-and-pipes">Collision With Ground and Pipes</a></li>
     <li><a href="{{page.url}}#reseting">Reseting</a></li>
     <li><a href="{{page.url}}#scoring">Scoring</a></li>
+    <li><a href="{{page.url}}#adding-animation">Adding Animation</a></li>
 </ul>
 
 <hr />
@@ -721,6 +722,119 @@ public class Game1 : Game {
 <p>Nice, add a <code>Console.WriteLine(_score)</code> inside the <code>Update</code> method of <strong>Game1</strong>. We will use this to make sure that the score is being increased just a few times:</p>
 
 <video src="/assets/flappy_bird_course/videos/adding_score.mp4" autoplay muted loop></video>
+
+<hr>
+
+<h3 id="adding-animation"><a href="{{page.url}}#adding-animation">Adding Animation (30/08/2026)</a></h3>
+
+<div class="msg">
+<p>A few days after concluding the part 5 of this course I noticed that I forgot to show how to animate the bird (that is the reason why many footages from part 5 the bird isn't animated). So this part here is an update some days after posting the part 4 and 5.</p>
+
+<p>The only change we will do here is with the sprite, so you don't need to care about "breaking" the code you would have already done until part 5.</p>
+</div>
+
+<p>To animate the bird we will just change the clipping rectangle after some time and repeat that process infinitely until the game is over.</p>
+
+<pre>
+public class Bird {
+    ...
+    private Rectangle[] _frames = [
+        new Rectangle(6, 982, 34, 24),
+        new Rectangle(62, 982, 34, 24),
+        new Rectangle(118, 982, 34, 24),
+        new Rectangle(62, 982, 34, 24),
+    ];
+    private float _frameElapsed;
+    private float _frameDuration = 0.1f;
+    private int _currentFrameId = 0;
+    private bool _updateAnim = true;
+    ...
+    public void Update(<strong>GameTime gameTime</strong>, List&lt;Pipes&gt; pipes) 
+    {
+        ...
+    }
+}
+</pre>
+
+<p>Each <strong>Rectangle</strong> correspond to one frame of the bird's animation:</p>
+
+<img src="/assets/flappy_bird_course/images/Screenshot_20260830_145745.png" alt="clipping rectangle and its respective frame">
+
+<p class="msg">I repeated the mid frame to create a smooth transition before reseting the animation.</p>
+
+<p><code>_frameElapsed</code> and <code>_frameDuration</code> are the variables needed for our timer.</p>
+
+<p><code>_currentFrameId</code> is necessary to make a reference of the current frame that our animation will show.</p>
+
+<p><code>_updateAnim</code> will control when the animation will or not play.</p>
+
+<p>We also need to pass a reference of a <strong>GameTime</strong> to update the timer.</p>
+
+<pre>
+public class Bird {
+    ...
+    public void Update(...) {
+        ...
+        if (_updateAnim)
+        {
+            float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            _frameElapsed += delta;
+            if (_frameElapsed >= _frameDuration)
+            {
+                _frameElapsed -= _frameDuration;
+                _currentFrameId++;
+                if (_currentFrameId >= _frames.Length)
+                    _currentFrameId = 0;
+            }
+        }
+        ...
+    }
+    public void Draw(...) {
+        ...
+        var frame = _frames[_currentFrameId];
+        batch.Draw(_texture, Position, <strong>frame</strong>, ...);
+    }
+}
+</pre>
+
+<p>This is all the necessary to make our animation work:</p>
+
+<video src="/assets/flappy_bird_course/videos/animating_the_bird.mp4" autoplay loop muted></video>
+
+<div class="msg">You can change the animation speed by changing the <code>_frameDuration</code> field.</div>
+
+<p>What we need now is to stop the animation when the bird hits some pipe and reset the animation when the game restart.</p>
+
+<p>When you hit the ground, the animation already stops because we are updating it inside the bird's <strong>Update</strong> method and it is only called by the Game1 class when isn't game over so we don't need to care about this.</p>
+
+<pre>
+public class Bird {
+    ...
+    private void HandlePipesCollisions(List&lt;Pipe&gt; pipes)
+    {
+        foreach (var pipe in pipes)
+        {
+            if (...)
+            {
+                ...
+                _updateAnim = false;
+            }
+        }
+    }
+    ...
+    public void Reset()
+    {
+        ...
+        _currentFrameId = 0;
+        _frameElapsed = 0f;
+        _updateAnim = true;
+    }
+}
+</pre>
+
+<video src="/assets/flappy_bird_course/videos/reseting_and_stopping_the_animation.mp4" autoplay loop muted></video>
+
+<p>Great, we are done now 😉.</p>
 
 <hr>
 
